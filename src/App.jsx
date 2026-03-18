@@ -1,10 +1,12 @@
 import { Routes, Route, NavLink } from 'react-router-dom'
 import AgendaSetter from './pages/AgendaSetter.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import EmailCampagna from './pages/EmailCampagna.jsx'
 
 const NAV = [
   { to: '/',       icon: '◈', label: 'Dashboard' },
   { to: '/agenda', icon: '◷', label: 'Agenda Setter' },
+  { to: '/email',  icon: '✉', label: 'Campagne Email' },
 ]
 
 export default function App() {
@@ -15,6 +17,7 @@ export default function App() {
         <Routes>
           <Route path="/"       element={<Dashboard />} />
           <Route path="/agenda" element={<AgendaSetter />} />
+          <Route path="/email"  element={<EmailCampagna />} />
         </Routes>
       </main>
     </div>
