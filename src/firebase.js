@@ -3,12 +3,12 @@ import { getFirestore } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBFETruNuacAboudE4w66GOBLGN4x8iog8",
-  authDomain: "mindsell-crm.firebaseapp.com",
-  projectId: "mindsell-crm",
-  storageBucket: "mindsell-crm.firebasestorage.app",
-  messagingSenderId: "955776000909",
-  appId: "1:955776000909:web:8ef60c4faa38c8685ad3c4"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
 const app = initializeApp(firebaseConfig)
