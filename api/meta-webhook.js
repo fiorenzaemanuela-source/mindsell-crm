@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       for (const entry of body.entry || []) {
         for (const change of entry.changes || []) {
           if (change.field === 'leadgen') {
-            await fetchAndSaveLead(change.value.leadgen_id)
+            await fetchAndSaveLead(change.value)
           }
         }
       }
@@ -42,48 +42,90 @@ export default async function handler(req, res) {
   return res.status(405).send('Method Not Allowed')
 }
 
-async function fetchAndSaveLead(leadgenId) {
+async function fetchAndSaveLead(webhookData) {
   try {
-    const url = `https://graph.facebook.com/v19.0/${leadgenId}?access_token=${PAGE_ACCESS_TOKEN}`
+    const { leadgen_id, form_id, ad_id, adgroup_id, campaign_id } = webhookData
+
+    // Recupera dati lead da Meta
+    const url = `https://graph.facebook.com/v19.0/${leadgen_id}?fields=field_data,ad_id,adgroup_id,campaign_id,form_id,created_time&access_token=${PAGE_ACCESS_TOKEN}`
     const r = await fetch(url)
     const data = await r.json()
     if (!data.field_data) return
 
+    // Mappa i campi del form
     const fields = {}
     data.field_data.forEach(f => { fields[f.name] = f.values?.[0] || '' })
 
+    // Recupera nome campagna da Meta
+    let campagna = ''
+    let funnel = 'Meta Ads'
+    if (data.campaign_id) {
+      try {
+        const cr = await fetch(`https://graph.facebook.com/v19.0/${data.campaign_id}?fields=name&access_token=${PAGE_ACCESS_TOKEN}`)
+        const cd = await cr.json()
+        campagna = cd.name || ''
+        funnel = campagna || 'Meta Ads'
+      } catch (e) {}
+    }
+
+    // Recupera nome form
+    let nomeForm = ''
+    if (data.form_id) {
+      try {
+        const fr = await fetch(`https://graph.facebook.com/v19.0/${data.form_id}?fields=name&access_token=${PAGE_ACCESS_TOKEN}`)
+        const fd = await fr.json()
+        nomeForm = fd.name || ''
+      } catch (e) {}
+    }
+
     const nomeCompleto = (fields['full_name'] || fields['nome'] || '').trim()
     const parti = nomeCompleto.split(' ')
+
+    // Calcola priorità da presenza evento
+    const presenza = parseInt(fields['presenza'] || fields['giorni_presenza'] || '0') || 0
+    const priorita = presenza >= 2 ? 'Alta' : 'Media'
+
+    const tags = ['meta-ads']
+    if (campagna) tags.push(campagna)
+    if (nomeForm) tags.push(nomeForm)
 
     const lead = {
       nome: parti[0] || '',
       cognome: parti.slice(1).join(' ') || '',
       email: fields['email'] || '',
       telefono: fields['phone_number'] || fields['telefono'] || '',
-      funnel: 'Meta Ads',
+      funnel,
       fonte: 'Meta Ads',
       stage: 'Nuovo lead',
-      priorita: 'Media',
-      tags: ['meta-ads'],
+      priorita,
+      tags,
       settore: fields['settore'] || fields['in_quale_settore_operi'] || '',
       ruolo: fields['ruolo'] || fields['quale_ruolo_ricopri'] || '',
       esperienzaVendita: fields['da_quanto_tempo'] || '',
       obiettivoLead: fields['priorita_obiettivo'] || fields['qual_e_la_tua_priorita'] || '',
       haCorsiVendita: fields['hai_gia_seguito_corsi'] || '',
       citta: fields['city'] || fields['citta'] || '',
+      campagna,
+      nomeForm,
       note: Object.entries(fields).map(([k, v]) => `${k}: ${v}`).join('\n'),
       materiali: [], offerte: [], esito: '', flowEmail: '',
       canale: 'Telefono', valoreStimato: '', motivoPerdita: '',
-      metaLeadgenId: leadgenId,
+      metaLeadgenId: leadgen_id,
       createdAt: Date.now()
     }
 
+    // Deduplicazione per email
     if (lead.email) {
       const existing = await db.collection('leads')
         .where('email', '==', lead.email).limit(1).get()
       if (!existing.empty) {
-        const tags = [...new Set([...(existing.docs[0].data().tags || []), 'meta-ads'])]
-        await db.collection('leads').doc(existing.docs[0].id).update({ tags, updatedAt: Date.now() })
+        const existingData = existing.docs[0].data()
+        const updatedTags = [...new Set([...(existingData.tags || []), ...tags])]
+        await db.collection('leads').doc(existing.docs[0].id).update({
+          tags: updatedTags,
+          campagna,
+          updatedAt: Date.now()
+        })
         return
       }
     }
