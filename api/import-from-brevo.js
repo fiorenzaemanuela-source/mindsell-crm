@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 
+// Blocco identico a meta-webhook.js che funziona
 if (!getApps().length) {
   initializeApp({
     credential: cert({
@@ -14,7 +15,6 @@ if (!getApps().length) {
 const db = getFirestore()
 const BREVO_API_KEY = process.env.BREVO_API_KEY
 
-// Liste Brevo da importare con il funnel corrispondente
 const LISTE = [
   { id: 11, funnel: 'Webinar Potere Parole 2026' },
   { id: 9,  funnel: 'Webinar MindSell 2025'      },
@@ -22,13 +22,10 @@ const LISTE = [
   { id: 13, funnel: 'Offerta Limitata'           },
 ]
 
-async function getContattiBravo(listaId, offset = 0) {
-  const url = `https://api.brevo.com/v3/contacts/lists/${listaId}/contacts?limit=500&offset=${offset}`
+async function getContattiBravo(listaId) {
+  const url = `https://api.brevo.com/v3/contacts/lists/${listaId}/contacts?limit=500&offset=0`
   const r = await fetch(url, {
-    headers: {
-      'api-key': BREVO_API_KEY,
-      'Content-Type': 'application/json'
-    }
+    headers: { 'api-key': BREVO_API_KEY }
   })
   return r.json()
 }
@@ -51,8 +48,6 @@ export default async function handler(req, res) {
     let totCreati = 0, totAggiornati = 0, totErrori = 0
 
     for (const lista of LISTE) {
-      console.log(`📋 Importo lista #${lista.id} - ${lista.funnel}`)
-      
       const data = await getContattiBravo(lista.id)
       const contatti = data.contacts || []
 
@@ -61,16 +56,14 @@ export default async function handler(req, res) {
           const email = (contatto.email || '').toLowerCase().trim()
           if (!email) continue
 
-          // Recupera dettagli completi del contatto
           const dettaglio = await getDettaglioContatto(email)
           const attr = dettaglio.attributes || {}
 
-          const nome    = (attr.FIRSTNAME || '').trim()
-          const cognome = (attr.LASTNAME  || '').trim()
+          const nome     = (attr.FIRSTNAME || '').trim()
+          const cognome  = (attr.LASTNAME  || '').trim()
           const telefono = (attr.SMS || attr.PHONE || '').trim()
-          const citta   = (attr.CITY || '').trim()
+          const citta    = (attr.CITY || '').trim()
 
-          // Deduplicazione
           const existing = await db.collection('leads')
             .where('email', '==', email).limit(1).get()
 
@@ -85,11 +78,11 @@ export default async function handler(req, res) {
 
           const lead = {
             nome, cognome, email, telefono, citta,
-            funnel:   lista.funnel,
-            fonte:    'Brevo',
-            stage:    'Nuovo lead',
+            funnel: lista.funnel,
+            fonte: 'Brevo',
+            stage: 'Nuovo lead',
             priorita: 'Media',
-            tags:     ['brevo', 'webinar'],
+            tags: ['brevo', 'webinar'],
             settore: '', ruolo: '', esperienzaVendita: '',
             haCorsiVendita: '', obiettivoLead: '', campagna: '',
             note: '', materiali: [], offerte: [], esito: '',
@@ -100,8 +93,6 @@ export default async function handler(req, res) {
 
           await db.collection('leads').add(lead)
           totCreati++
-
-          // Pausa per non superare rate limit Brevo
           await new Promise(r => setTimeout(r, 200))
 
         } catch (e) {
@@ -119,7 +110,7 @@ export default async function handler(req, res) {
     })
 
   } catch (e) {
-    console.error('❌ Errore import Brevo:', e)
+    console.error('Errore import Brevo:', e)
     return res.status(500).json({ error: e.message })
   }
 }
