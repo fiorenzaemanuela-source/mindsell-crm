@@ -101,22 +101,25 @@ export default function Leads() {
 
   return () => unsub()
 }, [])
-  const filtered = leads.filter(l => {
-    console.log('RENDER leads:', leads.length)
+  const q = (search || '').toLowerCase()
+
+const filtered = leads.filter(l => {
+  const matchSearch = !q ||
+    (l.nome || '').toLowerCase().includes(q) ||
+    (l.cognome || '').toLowerCase().includes(q) ||
+    (l.email || '').toLowerCase().includes(q) ||
+    (l.telefono || '').includes(q)
+
+  const matchFunnel = !filterFunnel || l.funnel === filterFunnel
+  const matchStage = !filterStage || l.stage === filterStage
+  const matchPriorita = !filterPriorita || l.priorita === filterPriorita
+
+  return matchSearch && matchFunnel && matchStage && matchPriorita
+})
+
+console.log('RENDER leads:', leads.length)
 console.log('RENDER filtered:', filtered.length)
 console.log('RENDER view:', view)
-    const q = search.toLowerCase()
-    const matchSearch = !q ||
-      (l.nome || '').toLowerCase().includes(q) ||
-      (l.cognome || '').toLowerCase().includes(q) ||
-      (l.email || '').toLowerCase().includes(q) ||
-      (l.telefono || '').includes(q)
-    const matchFunnel = !filterFunnel || l.funnel === filterFunnel
-    const matchStage = !filterStage || l.stage === filterStage
-    const matchPriorita = !filterPriorita || l.priorita === filterPriorita
-    return matchSearch && matchFunnel && matchStage && matchPriorita
-  })
-
   const openNew = () => { setForm(EMPTY_LEAD); setSelected(null); setTab('anagrafica'); setView('new') }
   const openDetail = lead => { setForm({ ...EMPTY_LEAD, ...lead }); setSelected(lead); setTab('anagrafica'); setView('detail') }
 
