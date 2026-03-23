@@ -3,9 +3,10 @@ const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID
 
 const LISTE = [
   { id: 11, funnel: 'Webinar Potere Parole 2026' },
-  { id: 9,  funnel: 'Webinar MindSell 2025'      },
+  { id: 9,  funnel: 'Partecipanti Webinar'       },
   { id: 8,  funnel: 'Video Lezione'              },
   { id: 13, funnel: 'Offerta Limitata'           },
+  { id: 3,  funnel: 'Webinar MindSell 2025'      },
 ]
 
 async function firestoreQuery(projectId, query) {
