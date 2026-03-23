@@ -123,14 +123,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message })
   }
 }
-```
-
-**Commit message:** `feat: import contacts from Brevo lists`
-
----
-
-## Come usarlo
-
-Dopo il redeploy Vercel (~2 min), apri semplicemente nel browser:
-```
-https://crm.mindsell.it/api/import-from-brevo
