@@ -72,8 +72,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message })
   }
 }
-```
-
-Dopo il redeploy testa prima con:
-```
-https://crm.mindsell.it/api/import-leads
