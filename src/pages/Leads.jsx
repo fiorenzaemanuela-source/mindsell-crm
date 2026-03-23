@@ -120,7 +120,7 @@ const filtered = leads.filter(l => {
 console.log('RENDER leads:', leads.length)
 console.log('RENDER filtered:', filtered.length)
 console.log('RENDER view:', view)
-  const openNew = () => { setForm(EMPTY_LEAD); setSelected(null); setTab('anagrafica'); setView('new') }
+  const openNew = () => { setForm(...EMPTY_LEAD); setSelected(null); setTab('anagrafica'); setView('new') }
   const openDetail = lead => { setForm({ ...EMPTY_LEAD, ...lead }); setSelected(lead); setTab('anagrafica'); setView('detail') }
 
   const saveNew = async () => {
