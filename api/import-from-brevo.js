@@ -2,11 +2,18 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 
 if (!getApps().length) {
+  const pk = process.env.FIREBASE_PRIVATE_KEY
+  console.log('PK type:', typeof pk)
+  console.log('PK length:', pk?.length)
+  console.log('PK start:', pk?.substring(0, 30))
+  console.log('PK has \\n:', pk?.includes('\\n'))
+  console.log('PK has newline:', pk?.includes('\n'))
+
   initializeApp({
     credential: cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      privateKey: pk?.replace(/\\n/g, '\n'),
     })
   })
 }
@@ -28,7 +35,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed')
 
   try {
-    // Leggi listaId e offset dalla richiesta (per import a blocchi)
     const { listaIndex = 0, offset = 0 } = req.body || {}
     const lista = LISTE[listaIndex]
 
@@ -36,7 +42,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'completato', messaggio: 'Tutte le liste importate' })
     }
 
-    // Scarica UN blocco di 10 contatti per volta
     const url = `https://api.brevo.com/v3/contacts/lists/${lista.id}/contacts?limit=10&offset=${offset}&sort=desc`
     const r = await fetch(url, { headers: { 'api-key': BREVO_API_KEY } })
     const data = await r.json()
@@ -48,10 +53,10 @@ export default async function handler(req, res) {
       const email = (contatto.email || '').toLowerCase().trim()
       if (!email) continue
 
-      const nome    = (contatto.attributes?.FIRSTNAME || '').trim()
-      const cognome = (contatto.attributes?.LASTNAME  || '').trim()
+      const nome     = (contatto.attributes?.FIRSTNAME || '').trim()
+      const cognome  = (contatto.attributes?.LASTNAME  || '').trim()
       const telefono = (contatto.attributes?.SMS || contatto.attributes?.PHONE || '').trim()
-      const citta   = (contatto.attributes?.CITY || '').trim()
+      const citta    = (contatto.attributes?.CITY || '').trim()
 
       const existing = await db.collection('leads')
         .where('email', '==', email).limit(1).get()
@@ -82,11 +87,9 @@ export default async function handler(req, res) {
       creati++
     }
 
-    // Calcola prossimo blocco
-    const prossimoOffset = offset + 10
     const haAltri = contatti.length === 10
     const prossima = haAltri
-      ? { listaIndex, offset: prossimoOffset }
+      ? { listaIndex, offset: offset + 10 }
       : { listaIndex: listaIndex + 1, offset: 0 }
 
     return res.status(200).json({
