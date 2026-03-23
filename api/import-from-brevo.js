@@ -58,6 +58,10 @@ export default async function handler(req, res) {
     const url = `https://api.brevo.com/v3/contacts/lists/${lista.id}/contacts?limit=10&offset=${offset}`
     const r = await fetch(url, { headers: { 'api-key': BREVO_API_KEY } })
     const data = await r.json()
+    
+    // DEBUG — rimuovere dopo il test
+    console.log('Brevo risposta lista', lista.id, ':', JSON.stringify(data).substring(0, 300))
+    
     const contatti = data.contacts || []
 
     let creati = 0, aggiornati = 0
