@@ -19,70 +19,58 @@ export default async function handler(req, res) {
     const app = initFirebase()
     const db = getFirestore(app)
     const payload = req.body
+    const leads = Array.isArray(payload) ? payload : [payload]
 
-    const nomeCompleto = (payload.nomeCompleto || '').trim()
-    const parti = nomeCompleto.split(' ')
-    const nome = parti[0] || ''
-    const cognome = parti.slice(1).join(' ') || ''
-    const email = (payload.email || '').toLowerCase().trim()
-    const telefono = (payload.telefono || '').trim()
-    const funnel = (payload.funnel || 'Webinar').trim()
-    const fonte = payload.fonte || 'Import Sheet'
-    const presenzaEvento = (payload.presenzaEvento || '').trim()
+    let creati = 0, aggiornati = 0, errori = 0
 
-    let priorita = 'Bassa'
-    const gg = parseInt(presenzaEvento) || 0
-    if (gg >= 2) priorita = 'Alta'
-    else if (gg === 1) priorita = 'Media'
+    for (const item of leads) {
+      try {
+        const nomeCompleto = (item.nomeCompleto || '').trim()
+        const parti = nomeCompleto.split(' ')
+        const nome = parti[0] || ''
+        const cognome = parti.slice(1).join(' ') || ''
+        const email = (item.email || '').toLowerCase().trim()
+        const telefono = (item.telefono || '').trim()
+        const funnel = (item.funnel || 'Webinar').trim()
+        const fonte = item.fonte || 'Import Sheet'
+        const presenzaEvento = (item.presenzaEvento || '').trim()
 
-    if (!email && !nomeCompleto) {
-      return res.status(400).json({ error: 'Riga vuota' })
-    }
+        let priorita = 'Bassa'
+        const gg = parseInt(presenzaEvento) || 0
+        if (gg >= 2) priorita = 'Alta'
+        else if (gg === 1) priorita = 'Media'
 
-    if (email) {
-      const existing = await db.collection('leads')
-        .where('email', '==', email).limit(1).get()
-      if (!existing.empty) {
-        await db.collection('leads').doc(existing.docs[0].id).update({
-          updatedAt: Date.now(),
-          fonte,
+        if (!email && !nomeCompleto) continue
+
+        if (email) {
+          const existing = await db.collection('leads')
+            .where('email', '==', email).limit(1).get()
+          if (!existing.empty) {
+            await db.collection('leads').doc(existing.docs[0].id).update({
+              updatedAt: Date.now(), fonte,
+            })
+            aggiornati++
+            continue
+          }
+        }
+
+        await db.collection('leads').add({
+          nome, cognome, email, telefono, funnel, fonte,
+          stage: 'Nuovo lead', priorita, tags: ['import'],
+          presenzaEvento, citta: '', settore: '', ruolo: '',
+          esperienzaVendita: '', haCorsiVendita: '', obiettivoLead: '',
+          campagna: '', note: presenzaEvento ? 'Presenza evento: ' + presenzaEvento + 'gg' : '',
+          materiali: [], offerte: [], esito: '', flowEmail: '',
+          canale: 'Telefono', valoreStimato: '', motivoPerdita: '',
+          metaLeadgenId: '', createdAt: Date.now(),
         })
-        return res.status(200).json({ status: 'updated', id: existing.docs[0].id })
+        creati++
+      } catch(e) {
+        errori++
       }
     }
 
-    const lead = {
-      nome,
-      cognome,
-      email,
-      telefono,
-      funnel,
-      fonte,
-      stage: 'Nuovo lead',
-      priorita,
-      tags: ['import'],
-      presenzaEvento,
-      citta: '',
-      settore: '',
-      ruolo: '',
-      esperienzaVendita: '',
-      haCorsiVendita: '',
-      obiettivoLead: '',
-      campagna: '',
-      note: presenzaEvento ? 'Presenza evento: ' + presenzaEvento + 'gg' : '',
-      materiali: [],
-      offerte: [],
-      esito: '',
-      flowEmail: '',
-      canale: 'Telefono',
-      valoreStimato: '',
-      motivoPerdita: '',
-      metaLeadgenId: '',
-      createdAt: Date.now(),
-    }
-
-    const docRef = await db.collection('leads').add(lead)
-    return res.status(200).json({ status: 'created', id: docRef.id })
+    return res.status(200).json({ status: 'ok', creati, aggiornati, errori })
 
   } catch (e) {
     console.error('Errore:', e.message)
