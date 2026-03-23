@@ -71,7 +71,7 @@ export default function Leads() {
   const [leads, setLeads] = useState([])
   const [view, setView] = useState('list')
   const [selected, setSelected] = useState(null)
-  const [form, setForm] = useState(EMPTY_LEAD)
+  const [form, setForm] = useState({ ...EMPTY_LEAD })
   const [search, setSearch] = useState('')
   const [filterFunnel, setFilterFunnel] = useState('')
   const [filterStage, setFilterStage] = useState('')
