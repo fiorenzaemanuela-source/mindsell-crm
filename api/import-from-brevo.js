@@ -1,25 +1,5 @@
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
-
-if (!getApps().length) {
-  const pk = process.env.FIREBASE_PRIVATE_KEY
-  console.log('PK type:', typeof pk)
-  console.log('PK length:', pk?.length)
-  console.log('PK start:', pk?.substring(0, 30))
-  console.log('PK has \\n:', pk?.includes('\\n'))
-  console.log('PK has newline:', pk?.includes('\n'))
-
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: pk?.replace(/\\n/g, '\n'),
-    })
-  })
-}
-
-const db = getFirestore()
 const BREVO_API_KEY = process.env.BREVO_API_KEY
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID
 
 const LISTE = [
   { id: 11, funnel: 'Webinar Potere Parole 2026' },
@@ -28,21 +8,53 @@ const LISTE = [
   { id: 13, funnel: 'Offerta Limitata'           },
 ]
 
+async function firestoreQuery(projectId, query) {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(query),
+  })
+  return r.json()
+}
+
+async function firestoreAdd(projectId, data) {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/leads`
+  const fields = {}
+  for (const [k, v] of Object.entries(data)) {
+    if (Array.isArray(v)) {
+      fields[k] = { arrayValue: { values: v.map(i => ({ stringValue: String(i) })) } }
+    } else if (typeof v === 'number') {
+      fields[k] = { integerValue: v }
+    } else {
+      fields[k] = { stringValue: String(v || '') }
+    }
+  }
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields }),
+  })
+  return r.json()
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    return res.status(200).json({ status: 'ok', service: 'import-from-brevo' })
+    return res.status(200).json({
+      status: 'ok',
+      brevo: !!BREVO_API_KEY,
+      firebase: !!FIREBASE_PROJECT_ID,
+    })
   }
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed')
 
   try {
     const { listaIndex = 0, offset = 0 } = req.body || {}
     const lista = LISTE[listaIndex]
+    if (!lista) return res.status(200).json({ status: 'completato' })
 
-    if (!lista) {
-      return res.status(200).json({ status: 'completato', messaggio: 'Tutte le liste importate' })
-    }
-
-    const url = `https://api.brevo.com/v3/contacts/lists/${lista.id}/contacts?limit=10&offset=${offset}&sort=desc`
+    // Scarica contatti da Brevo
+    const url = `https://api.brevo.com/v3/contacts/lists/${lista.id}/contacts?limit=10&offset=${offset}`
     const r = await fetch(url, { headers: { 'api-key': BREVO_API_KEY } })
     const data = await r.json()
     const contatti = data.contacts || []
@@ -58,19 +70,25 @@ export default async function handler(req, res) {
       const telefono = (contatto.attributes?.SMS || contatto.attributes?.PHONE || '').trim()
       const citta    = (contatto.attributes?.CITY || '').trim()
 
-      const existing = await db.collection('leads')
-        .where('email', '==', email).limit(1).get()
+      // Cerca se esiste già
+      const queryRes = await firestoreQuery(FIREBASE_PROJECT_ID, {
+        structuredQuery: {
+          from: [{ collectionId: 'leads' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'email' },
+              op: 'EQUAL',
+              value: { stringValue: email },
+            }
+          },
+          limit: 1,
+        }
+      })
 
-      if (!existing.empty) {
-        await db.collection('leads').doc(existing.docs[0].id).update({
-          updatedAt: Date.now(),
-          fonte: 'Brevo - ' + lista.funnel,
-        })
-        aggiornati++
-        continue
-      }
+      const exists = queryRes[0]?.document
+      if (exists) { aggiornati++; continue }
 
-      await db.collection('leads').add({
+      await firestoreAdd(FIREBASE_PROJECT_ID, {
         nome, cognome, email, telefono, citta,
         funnel: lista.funnel,
         fonte: 'Brevo',
@@ -95,14 +113,13 @@ export default async function handler(req, res) {
     return res.status(200).json({
       status: haAltri || listaIndex + 1 < LISTE.length ? 'continua' : 'completato',
       lista: lista.funnel,
-      offset,
       creati,
       aggiornati,
       prossima,
     })
 
   } catch (e) {
-    console.error('Errore:', e)
+    console.error('Errore:', e.message)
     return res.status(500).json({ error: e.message })
   }
 }
