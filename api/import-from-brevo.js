@@ -1,7 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 
-// Blocco identico a meta-webhook.js che funziona
 if (!getApps().length) {
   initializeApp({
     credential: cert({
@@ -22,22 +21,6 @@ const LISTE = [
   { id: 13, funnel: 'Offerta Limitata'           },
 ]
 
-async function getContattiBravo(listaId) {
-  const url = `https://api.brevo.com/v3/contacts/lists/${listaId}/contacts?limit=500&offset=0`
-  const r = await fetch(url, {
-    headers: { 'api-key': BREVO_API_KEY }
-  })
-  return r.json()
-}
-
-async function getDettaglioContatto(email) {
-  const url = `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`
-  const r = await fetch(url, {
-    headers: { 'api-key': BREVO_API_KEY }
-  })
-  return r.json()
-}
-
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).json({ status: 'ok', service: 'import-from-brevo' })
@@ -45,72 +28,78 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed')
 
   try {
-    let totCreati = 0, totAggiornati = 0, totErrori = 0
+    // Leggi listaId e offset dalla richiesta (per import a blocchi)
+    const { listaIndex = 0, offset = 0 } = req.body || {}
+    const lista = LISTE[listaIndex]
 
-    for (const lista of LISTE) {
-      const data = await getContattiBravo(lista.id)
-      const contatti = data.contacts || []
-
-      for (const contatto of contatti) {
-        try {
-          const email = (contatto.email || '').toLowerCase().trim()
-          if (!email) continue
-
-          const dettaglio = await getDettaglioContatto(email)
-          const attr = dettaglio.attributes || {}
-
-          const nome     = (attr.FIRSTNAME || '').trim()
-          const cognome  = (attr.LASTNAME  || '').trim()
-          const telefono = (attr.SMS || attr.PHONE || '').trim()
-          const citta    = (attr.CITY || '').trim()
-
-          const existing = await db.collection('leads')
-            .where('email', '==', email).limit(1).get()
-
-          if (!existing.empty) {
-            await db.collection('leads').doc(existing.docs[0].id).update({
-              updatedAt: Date.now(),
-              fonte: 'Brevo - ' + lista.funnel,
-            })
-            totAggiornati++
-            continue
-          }
-
-          const lead = {
-            nome, cognome, email, telefono, citta,
-            funnel: lista.funnel,
-            fonte: 'Brevo',
-            stage: 'Nuovo lead',
-            priorita: 'Media',
-            tags: ['brevo', 'webinar'],
-            settore: '', ruolo: '', esperienzaVendita: '',
-            haCorsiVendita: '', obiettivoLead: '', campagna: '',
-            note: '', materiali: [], offerte: [], esito: '',
-            flowEmail: '', canale: 'Telefono', valoreStimato: '',
-            motivoPerdita: '', metaLeadgenId: '',
-            createdAt: Date.now(),
-          }
-
-          await db.collection('leads').add(lead)
-          totCreati++
-          await new Promise(r => setTimeout(r, 200))
-
-        } catch (e) {
-          console.error('Errore contatto:', e.message)
-          totErrori++
-        }
-      }
+    if (!lista) {
+      return res.status(200).json({ status: 'completato', messaggio: 'Tutte le liste importate' })
     }
 
+    // Scarica UN blocco di 10 contatti per volta
+    const url = `https://api.brevo.com/v3/contacts/lists/${lista.id}/contacts?limit=10&offset=${offset}&sort=desc`
+    const r = await fetch(url, { headers: { 'api-key': BREVO_API_KEY } })
+    const data = await r.json()
+    const contatti = data.contacts || []
+
+    let creati = 0, aggiornati = 0
+
+    for (const contatto of contatti) {
+      const email = (contatto.email || '').toLowerCase().trim()
+      if (!email) continue
+
+      const nome    = (contatto.attributes?.FIRSTNAME || '').trim()
+      const cognome = (contatto.attributes?.LASTNAME  || '').trim()
+      const telefono = (contatto.attributes?.SMS || contatto.attributes?.PHONE || '').trim()
+      const citta   = (contatto.attributes?.CITY || '').trim()
+
+      const existing = await db.collection('leads')
+        .where('email', '==', email).limit(1).get()
+
+      if (!existing.empty) {
+        await db.collection('leads').doc(existing.docs[0].id).update({
+          updatedAt: Date.now(),
+          fonte: 'Brevo - ' + lista.funnel,
+        })
+        aggiornati++
+        continue
+      }
+
+      await db.collection('leads').add({
+        nome, cognome, email, telefono, citta,
+        funnel: lista.funnel,
+        fonte: 'Brevo',
+        stage: 'Nuovo lead',
+        priorita: 'Media',
+        tags: ['brevo', 'webinar'],
+        settore: '', ruolo: '', esperienzaVendita: '',
+        haCorsiVendita: '', obiettivoLead: '', campagna: '',
+        note: '', materiali: [], offerte: [], esito: '',
+        flowEmail: '', canale: 'Telefono', valoreStimato: '',
+        motivoPerdita: '', metaLeadgenId: '',
+        createdAt: Date.now(),
+      })
+      creati++
+    }
+
+    // Calcola prossimo blocco
+    const prossimoOffset = offset + 10
+    const haAltri = contatti.length === 10
+    const prossima = haAltri
+      ? { listaIndex, offset: prossimoOffset }
+      : { listaIndex: listaIndex + 1, offset: 0 }
+
     return res.status(200).json({
-      status: 'completato',
-      creati: totCreati,
-      aggiornati: totAggiornati,
-      errori: totErrori
+      status: haAltri || listaIndex + 1 < LISTE.length ? 'continua' : 'completato',
+      lista: lista.funnel,
+      offset,
+      creati,
+      aggiornati,
+      prossima,
     })
 
   } catch (e) {
-    console.error('Errore import Brevo:', e)
+    console.error('Errore:', e)
     return res.status(500).json({ error: e.message })
   }
 }
