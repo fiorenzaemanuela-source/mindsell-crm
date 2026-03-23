@@ -22,12 +22,12 @@ export default async function handler(req, res) {
 
     const nomeCompleto = (payload.nomeCompleto || '').trim()
     const parti = nomeCompleto.split(' ')
-    const nome    = parti[0] || ''
+    const nome = parti[0] || ''
     const cognome = parti.slice(1).join(' ') || ''
-    const email   = (payload.email || '').toLowerCase().trim()
+    const email = (payload.email || '').toLowerCase().trim()
     const telefono = (payload.telefono || '').trim()
-    const funnel   = (payload.funnel || 'Webinar').trim()
-    const fonte    = payload.fonte || 'Import Sheet'
+    const funnel = (payload.funnel || 'Webinar').trim()
+    const fonte = payload.fonte || 'Import Sheet'
     const presenzaEvento = (payload.presenzaEvento || '').trim()
 
     let priorita = 'Bassa'
@@ -44,24 +44,41 @@ export default async function handler(req, res) {
         .where('email', '==', email).limit(1).get()
       if (!existing.empty) {
         await db.collection('leads').doc(existing.docs[0].id).update({
-          updatedAt: Date.now(), fonte,
+          updatedAt: Date.now(),
+          fonte,
         })
         return res.status(200).json({ status: 'updated', id: existing.docs[0].id })
       }
     }
 
     const lead = {
-      nome, cognome, email, telefono, funnel, fonte,
+      nome,
+      cognome,
+      email,
+      telefono,
+      funnel,
+      fonte,
       stage: 'Nuovo lead',
       priorita,
       tags: ['import'],
       presenzaEvento,
-      citta: '', settore: '', ruolo: '', esperienzaVendita: '',
-      haCorsiVendita: '', obiettivoLead: '', campagna: '',
-      note: presenzaEvento ? `Presenza evento: ${presenzaEvento}gg` : '',
-      materiali: [], offerte: [], esito: '', flowEmail: '',
-      canale: 'Telefono', valoreStimato: '', motivoPerdita: '',
-      metaLeadgenId: '', createdAt: Date.now(),
+      citta: '',
+      settore: '',
+      ruolo: '',
+      esperienzaVendita: '',
+      haCorsiVendita: '',
+      obiettivoLead: '',
+      campagna: '',
+      note: presenzaEvento ? 'Presenza evento: ' + presenzaEvento + 'gg' : '',
+      materiali: [],
+      offerte: [],
+      esito: '',
+      flowEmail: '',
+      canale: 'Telefono',
+      valoreStimato: '',
+      motivoPerdita: '',
+      metaLeadgenId: '',
+      createdAt: Date.now(),
     }
 
     const docRef = await db.collection('leads').add(lead)
@@ -72,8 +89,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message })
   }
 }
-```
-
-Dopo il redeploy testa prima con:
-```
-https://crm.mindsell.it/api/import-leads
