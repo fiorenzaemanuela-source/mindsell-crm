@@ -79,15 +79,32 @@ export default function Leads() {
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState('anagrafica')
 
-  useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, 'leads'),
-      snap => setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    )
-    return () => unsub()
-  }, [])
+ useEffect(() => {
+  console.log('--- DEBUG FIREBASE ---')
+  console.log('projectId env:', import.meta.env.VITE_FIREBASE_PROJECT_ID)
+  console.log('db projectId:', db.app.options.projectId)
+  console.log('all env:', import.meta.env)
 
+  const unsub = onSnapshot(
+    collection(db, 'leads'),
+    snap => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      console.log('SNAPSHOT ARRIVATO')
+      console.log('docs length:', snap.docs.length)
+      console.log('data:', data)
+      setLeads(data)
+    },
+    err => {
+      console.error('SNAPSHOT ERROR:', err)
+    }
+  )
+
+  return () => unsub()
+}, [])
   const filtered = leads.filter(l => {
+    console.log('RENDER leads:', leads.length)
+console.log('RENDER filtered:', filtered.length)
+console.log('RENDER view:', view)
     const q = search.toLowerCase()
     const matchSearch = !q ||
       (l.nome || '').toLowerCase().includes(q) ||
