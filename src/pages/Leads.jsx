@@ -81,7 +81,7 @@ export default function Leads() {
 
   useEffect(() => {
     const unsub = onSnapshot(
-      query(collection(db, 'leads'), orderBy('createdAt', 'desc')),
+      collection(db, 'leads'),
       snap => setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     )
     return () => unsub()
