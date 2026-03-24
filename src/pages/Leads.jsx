@@ -366,6 +366,7 @@ export default function Leads() {
   const TABS = [
     { id: 'anagrafica', label: 'Anagrafica'        },
     { id: 'funnel',     label: 'Funnel & Stato'    },
+    { id: 'questionario', label: 'Questionario'      },
     { id: 'materiali',  label: 'Materiali & Offerte'},
     { id: 'note',       label: 'Note & Scoring'    },
   ]
@@ -467,6 +468,42 @@ export default function Leads() {
                 {FLOW_OPTIONS.map(o => <option key={o}>{o}</option>)}
               </select>
             </F>
+          </div>
+        )}
+        {tab === 'questionario' && (
+          <div>
+            {(() => {
+              const campi = [
+                { label: 'Settore',              val: form.settore           },
+                { label: 'Ruolo',                val: form.ruolo             },
+                { label: 'Esperienza vendita',   val: form.esperienzaVendita },
+                { label: 'Ha già fatto corsi',   val: form.haCorsiVendita    },
+                { label: 'Obiettivo / Priorità', val: form.obiettivoLead     },
+                { label: 'Città',                val: form.citta             },
+              ]
+              const extra = form.datiQuestionario
+                ? Object.entries(form.datiQuestionario)
+                : []
+              const tutti = [
+                ...campi.filter(c => c.val),
+                ...extra.map(([k, v]) => ({ label: k, val: v }))
+              ]
+              if (tutti.length === 0) return (
+                <div style={{ color: 'var(--txt3)', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>
+                  Nessun dato questionario disponibile per questo lead.
+                </div>
+              )
+              return (
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {tutti.map((c, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', paddingTop: 2 }}>{c.label}</div>
+                      <div style={{ fontSize: 14, color: 'var(--txt)' }}>{c.val}</div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
           </div>
         )}
         {tab === 'materiali' && (
