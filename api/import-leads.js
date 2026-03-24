@@ -20,7 +20,6 @@ export default async function handler(req, res) {
     const db = getFirestore(app)
     const payload = req.body
     const leads = Array.isArray(payload) ? payload : [payload]
-
     let creati = 0, aggiornati = 0, errori = 0
 
     for (const item of leads) {
@@ -35,7 +34,7 @@ export default async function handler(req, res) {
         const fonte = item.fonte || 'Import Sheet'
         const presenzaEvento = (item.presenzaEvento || '').trim()
 
-        let priorita = 'Bassa'
+        let priorita = 'Alta'
         const gg = parseInt(presenzaEvento) || 0
         if (gg >= 2) priorita = 'Alta'
         else if (gg === 1) priorita = 'Media'
@@ -45,32 +44,41 @@ export default async function handler(req, res) {
         if (email) {
           const existing = await db.collection('leads')
             .where('email', '==', email).limit(1).get()
-         if (!existing.empty) {
+
+          if (!existing.empty) {
             await db.collection('leads').doc(existing.docs[0].id).update({
               updatedAt: Date.now(),
               fonte,
-              ...(item.settore            && { settore: item.settore }),
-              ...(item.ruolo              && { ruolo: item.ruolo }),
-              ...(item.esperienzaVendita  && { esperienzaVendita: item.esperienzaVendita }),
-              ...(item.haCorsiVendita     && { haCorsiVendita: item.haCorsiVendita }),
-              ...(item.obiettivoLead      && { obiettivoLead: item.obiettivoLead }),
-              ...(item.citta              && { citta: item.citta }),
+              ...(item.settore           && { settore: item.settore }),
+              ...(item.ruolo             && { ruolo: item.ruolo }),
+              ...(item.esperienzaVendita && { esperienzaVendita: item.esperienzaVendita }),
+              ...(item.haCorsiVendita    && { haCorsiVendita: item.haCorsiVendita }),
+              ...(item.obiettivoLead     && { obiettivoLead: item.obiettivoLead }),
+              ...(item.citta             && { citta: item.citta }),
             })
             aggiornati++
             continue
           }
+        }
 
         await db.collection('leads').add({
           nome, cognome, email, telefono, funnel, fonte,
-          stage: 'Nuovo lead', priorita, tags: ['import'],
-          presenzaEvento, citta: '', settore: '', ruolo: '',
-          esperienzaVendita: '', haCorsiVendita: '', obiettivoLead: '',
-          campagna: '', note: presenzaEvento ? 'Presenza evento: ' + presenzaEvento + 'gg' : '',
+          stage: '', priorita, tags: ['import'],
+          presenzaEvento,
+          citta:             item.citta             || '',
+          settore:           item.settore           || '',
+          ruolo:             item.ruolo             || '',
+          esperienzaVendita: item.esperienzaVendita || '',
+          haCorsiVendita:    item.haCorsiVendita    || '',
+          obiettivoLead:     item.obiettivoLead     || '',
+          campagna: '',
+          note: presenzaEvento ? 'Presenza evento: ' + presenzaEvento + 'gg' : '',
           materiali: [], offerte: [], esito: '', flowEmail: '',
           canale: 'Telefono', valoreStimato: '', motivoPerdita: '',
           metaLeadgenId: '', createdAt: Date.now(),
         })
         creati++
+
       } catch(e) {
         errori++
       }
