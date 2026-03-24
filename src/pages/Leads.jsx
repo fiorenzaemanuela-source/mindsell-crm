@@ -1,19 +1,8 @@
 import { useState, useEffect } from 'react'
 import { db } from '../firebase'
 import {
-  collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy
+  collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc
 } from 'firebase/firestore'
-
-const FUNNEL_OPTIONS = [
-  'Funnel Lead Freddi', 'Funnel Lead Caldi', 'Funnel Post-Consulenza',
-  'Funnel Riattivazione', 'Corso Online', 'Consulenza 1:1',
-  'Programma di Gruppo', 'Evento/Webinar', 'Partnership B2B',
-]
-
-const STAGE_OPTIONS = [
-  'Nuovo lead', 'Da contattare', 'Da richiamare',
-  'Non risponde', 'Non interessato', 'Consulenza fissata', 'Cliente',
-]
 
 const ESITI = [
   { id: 'consulenza',      label: 'Consulenza fissata', badge: 'badge-green' },
@@ -23,7 +12,7 @@ const ESITI = [
 ]
 
 const FONTE_OPTIONS = [
-  'Meta Ads', 'Google Ads', 'LinkedIn', 'Referral', 'Organico', 'Webinar', 'Email', 'Altro'
+  'Meta Ads', 'Google Ads', 'LinkedIn', 'Referral', 'Organico', 'Webinar', 'Email', 'Import Sheet', 'Altro'
 ]
 
 const CANALE_OPTIONS = ['Telefono', 'WhatsApp', 'Email', 'LinkedIn']
@@ -46,10 +35,18 @@ const FLOW_OPTIONS = [
 const PRIORITA = ['Alta', 'Media', 'Bassa']
 const MOTIVI_PERDITA = ['Prezzo', 'Timing', 'Concorrente', 'Non qualificato', 'Non raggiungibile', 'Altro']
 
+const DEFAULT_FUNNEL = ['Webinar_MindSell_2025', 'Traffico questionario', 'Webinar_Potere_Parole_2026']
+const DEFAULT_STATI = [
+  'Messaggio di benvenuto', 'Chiamata', 'Non risponde — richiamare',
+  'Contatto non utile', 'Consulenza fissata', 'Cliente acquisito',
+  'Non interessato', 'Cliente non in target', 'Appuntamento telefonico',
+  'Email di contatto', 'Cliente irreperibile',
+]
+
 const EMPTY_LEAD = {
   nome: '', cognome: '', email: '', telefono: '',
-  funnel: '', stage: 'Nuovo lead', esito: '',
-  fonte: '', canale: '', priorita: 'Media',
+  funnel: '', stage: '', esito: '',
+  fonte: '', canale: '', priorita: 'Alta',
   valoreStimato: '', flowEmail: '',
   materiali: [], offerte: [],
   tags: '', note: '',
@@ -62,14 +59,24 @@ const badgeClass = esito => ({
 }[esito] || 'badge-gray')
 
 const stageDot = stage => ({
-  'Nuovo lead': '#378ADD', 'Da contattare': '#BA7517', 'Da richiamare': '#EF9F27',
-  'Non risponde': '#888', 'Non interessato': '#E24B4A',
-  'Consulenza fissata': '#1D9E75', 'Cliente': '#2D2D8F',
+  'Messaggio di benvenuto': '#378ADD',
+  'Chiamata': '#BA7517',
+  'Non risponde — richiamare': '#EF9F27',
+  'Consulenza fissata': '#1D9E75',
+  'Cliente acquisito': '#2D2D8F',
+  'Non interessato': '#E24B4A',
+  'Cliente non in target': '#888',
+  'Appuntamento telefonico': '#9B59B6',
+  'Email di contatto': '#3498DB',
+  'Cliente irreperibile': '#555',
+  'Contatto non utile': '#E67E22',
 }[stage] || '#888')
 
 export default function Leads() {
   const [leads, setLeads] = useState([])
+  const [crmConfig, setCrmConfig] = useState(null)
   const [view, setView] = useState('list')
+  const [viewMode, setViewMode] = useState('list')
   const [selected, setSelected] = useState(null)
   const [form, setForm] = useState({ ...EMPTY_LEAD })
   const [search, setSearch] = useState('')
@@ -79,48 +86,37 @@ export default function Leads() {
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState('anagrafica')
 
- useEffect(() => {
-  console.log('--- DEBUG FIREBASE ---')
-  console.log('projectId env:', import.meta.env.VITE_FIREBASE_PROJECT_ID)
-  console.log('db projectId:', db.app.options.projectId)
-  console.log('all env:', import.meta.env)
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'leads'), snap => {
+      setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    })
+    return () => unsub()
+  }, [])
 
-  const unsub = onSnapshot(
-    collection(db, 'leads'),
-    snap => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      console.log('SNAPSHOT ARRIVATO')
-      console.log('docs length:', snap.docs.length)
-      console.log('data:', data)
-      setLeads(data)
-    },
-    err => {
-      console.error('SNAPSHOT ERROR:', err)
-    }
-  )
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'config'), snap => {
+      if (snap.exists()) setCrmConfig(snap.data())
+    })
+    return () => unsub()
+  }, [])
 
-  return () => unsub()
-}, [])
+  const FUNNEL_OPTIONS = crmConfig?.funnels || DEFAULT_FUNNEL
+  const STAGE_OPTIONS  = crmConfig?.stati   || DEFAULT_STATI
+
   const q = (search || '').toLowerCase()
+  const filtered = leads.filter(l => {
+    const matchSearch = !q ||
+      (l.nome || '').toLowerCase().includes(q) ||
+      (l.cognome || '').toLowerCase().includes(q) ||
+      (l.email || '').toLowerCase().includes(q) ||
+      (l.telefono || '').includes(q)
+    const matchFunnel   = !filterFunnel   || l.funnel   === filterFunnel
+    const matchStage    = !filterStage    || l.stage    === filterStage
+    const matchPriorita = !filterPriorita || l.priorita === filterPriorita
+    return matchSearch && matchFunnel && matchStage && matchPriorita
+  })
 
-const filtered = leads.filter(l => {
-  const matchSearch = !q ||
-    (l.nome || '').toLowerCase().includes(q) ||
-    (l.cognome || '').toLowerCase().includes(q) ||
-    (l.email || '').toLowerCase().includes(q) ||
-    (l.telefono || '').includes(q)
-
-  const matchFunnel = !filterFunnel || l.funnel === filterFunnel
-  const matchStage = !filterStage || l.stage === filterStage
-  const matchPriorita = !filterPriorita || l.priorita === filterPriorita
-
-  return matchSearch && matchFunnel && matchStage && matchPriorita
-})
-
-console.log('RENDER leads:', leads.length)
-console.log('RENDER filtered:', filtered.length)
-console.log('RENDER view:', view)
-  const openNew = () => { setForm(...EMPTY_LEAD); setSelected(null); setTab('anagrafica'); setView('new') }
+  const openNew    = () => { setForm({ ...EMPTY_LEAD }); setSelected(null); setTab('anagrafica'); setView('new') }
   const openDetail = lead => { setForm({ ...EMPTY_LEAD, ...lead }); setSelected(lead); setTab('anagrafica'); setView('detail') }
 
   const saveNew = async () => {
@@ -137,7 +133,7 @@ console.log('RENDER view:', view)
     const tags = typeof form.tags === 'string'
       ? form.tags.split(',').map(t => t.trim()).filter(Boolean)
       : form.tags || []
-    await updateDoc(doc(db, 'leads', selected.id), { ...form, tags })
+    await updateDoc(doc(db, 'leads', selected.id), { ...form, tags, updatedAt: Date.now() })
     setSaving(false)
     setView('list')
   }
@@ -168,8 +164,8 @@ console.log('RENDER view:', view)
       await addDoc(collection(db, 'leads'), {
         nome: row.nome || '', cognome: row.cognome || '',
         email: row.email || '', telefono: row.telefono || row.phone || '',
-        funnel: row.funnel || '', stage: row.stage || 'Nuovo lead',
-        fonte: row.fonte || '', priorita: row.priorita || 'Media',
+        funnel: row.funnel || '', stage: row.stage || '',
+        fonte: row.fonte || '', priorita: row.priorita || 'Alta',
         tags: [], materiali: [], offerte: [], note: '',
         flowEmail: '', canale: '', valoreStimato: '', esito: '',
         motivoPerdita: '', createdAt: Date.now()
@@ -187,6 +183,93 @@ console.log('RENDER view:', view)
     </div>
   )
 
+  const Toggle = () => (
+    <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', borderRadius: 8, padding: 3 }}>
+      <button onClick={() => setViewMode('list')} style={{
+        padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 13, cursor: 'pointer',
+        background: viewMode === 'list' ? 'var(--card)' : 'transparent',
+        color: viewMode === 'list' ? 'var(--txt)' : 'var(--txt3)',
+        fontWeight: viewMode === 'list' ? 600 : 400,
+      }}>☰ Lista</button>
+      <button onClick={() => setViewMode('kanban')} style={{
+        padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 13, cursor: 'pointer',
+        background: viewMode === 'kanban' ? 'var(--card)' : 'transparent',
+        color: viewMode === 'kanban' ? 'var(--txt)' : 'var(--txt3)',
+        fontWeight: viewMode === 'kanban' ? 600 : 400,
+      }}>⊞ Kanban</button>
+    </div>
+  )
+
+  if (view === 'list' && viewMode === 'kanban') {
+    const colonne = filterFunnel && crmConfig?.flussi?.[filterFunnel]?.length > 0
+      ? crmConfig.flussi[filterFunnel]
+      : STAGE_OPTIONS
+
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 600 }}>Lead</h1>
+            <p style={{ color: 'var(--txt2)', fontSize: 14, marginTop: 3 }}>{leads.length} lead totali · {filtered.length} visualizzati</p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <select value={filterFunnel} onChange={e => setFilterFunnel(e.target.value)}>
+              <option value="">Tutti i funnel</option>
+              {FUNNEL_OPTIONS.map(f => <option key={f}>{f}</option>)}
+            </select>
+            <Toggle />
+            <button className="btn-primary" onClick={openNew}>+ Nuovo lead</button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16, alignItems: 'flex-start' }}>
+          {colonne.map(stato => {
+            const leadsStato = filtered.filter(l => l.stage === stato)
+            const colori = {
+              'Alta': '#E24B4A', 'Media': '#EF9F27', 'Bassa': '#888'
+            }
+            return (
+              <div key={stato} style={{ minWidth: 230, maxWidth: 260, flexShrink: 0 }}>
+                <div style={{
+                  background: 'var(--card)', borderRadius: 10,
+                  padding: '12px 14px', marginBottom: 8,
+                  borderTop: '3px solid var(--accent)'
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt2)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>{stato}</div>
+                  <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--txt)' }}>{leadsStato.length}</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {leadsStato.map(l => (
+                    <div key={l.id} onClick={() => openDetail(l)} className="card"
+                      style={{ padding: '12px 14px', cursor: 'pointer', borderRadius: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--accentbg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--accent)', flexShrink: 0 }}>
+                          {(l.nome?.[0] || '?').toUpperCase()}
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{l.nome} {l.cognome}</div>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--txt2)', marginBottom: 6 }}>{l.email || l.telefono || '—'}</div>
+                      {l.priorita && (
+                        <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`} style={{ fontSize: 11 }}>
+                          {l.priorita}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {leadsStato.length === 0 && (
+                    <div style={{ fontSize: 12, color: 'var(--txt3)', textAlign: 'center', padding: '16px 0', background: 'var(--card)', borderRadius: 8 }}>
+                      Nessun lead
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   if (view === 'list') return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -194,11 +277,12 @@ console.log('RENDER view:', view)
           <h1 style={{ fontSize: 22, fontWeight: 600 }}>Lead</h1>
           <p style={{ color: 'var(--txt2)', fontSize: 14, marginTop: 3 }}>{leads.length} lead totali · {filtered.length} visualizzati</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <label className="btn-ghost" style={{ padding: '9px 16px', cursor: 'pointer', fontSize: 14 }}>
             ↑ Importa CSV
             <input type="file" accept=".csv" style={{ display: 'none' }} onChange={importCSV} />
           </label>
+          <Toggle />
           <button className="btn-primary" onClick={openNew}>+ Nuovo lead</button>
         </div>
       </div>
@@ -209,7 +293,7 @@ console.log('RENDER view:', view)
           {FUNNEL_OPTIONS.map(f => <option key={f}>{f}</option>)}
         </select>
         <select value={filterStage} onChange={e => setFilterStage(e.target.value)}>
-          <option value="">Tutti gli stage</option>
+          <option value="">Tutti gli stati</option>
           {STAGE_OPTIONS.map(s => <option key={s}>{s}</option>)}
         </select>
         <select value={filterPriorita} onChange={e => setFilterPriorita(e.target.value)}>
@@ -228,7 +312,7 @@ console.log('RENDER view:', view)
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-                  {['Lead', 'Email', 'Funnel', 'Stage', 'Esito', 'Priorità', 'Fonte', ''].map(h => (
+                  {['Lead', 'Email', 'Funnel', 'Stato', 'Esito', 'Priorità', 'Fonte', ''].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -275,11 +359,15 @@ console.log('RENDER view:', view)
   )
 
   const isNew = view === 'new'
+  const flussoCorrente = form.funnel && crmConfig?.flussi?.[form.funnel]?.length > 0
+    ? crmConfig.flussi[form.funnel]
+    : STAGE_OPTIONS
+
   const TABS = [
-    { id: 'anagrafica', label: 'Anagrafica' },
-    { id: 'funnel',     label: 'Funnel & Stage' },
-    { id: 'materiali',  label: 'Materiali & Offerte' },
-    { id: 'note',       label: 'Note & Scoring' },
+    { id: 'anagrafica', label: 'Anagrafica'        },
+    { id: 'funnel',     label: 'Funnel & Stato'    },
+    { id: 'materiali',  label: 'Materiali & Offerte'},
+    { id: 'note',       label: 'Note & Scoring'    },
   ]
 
   return (
@@ -346,14 +434,15 @@ console.log('RENDER view:', view)
           <div>
             <div className="form-row" style={{ marginBottom: 14 }}>
               <F label="Funnel di appartenenza" half>
-                <select value={form.funnel} onChange={e => setForm(f => ({ ...f, funnel: e.target.value }))}>
+                <select value={form.funnel} onChange={e => setForm(f => ({ ...f, funnel: e.target.value, stage: '' }))}>
                   <option value="">Seleziona...</option>
                   {FUNNEL_OPTIONS.map(o => <option key={o}>{o}</option>)}
                 </select>
               </F>
-              <F label="Stage attuale" half>
+              <F label="Stato attuale" half>
                 <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}>
-                  {STAGE_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                  <option value="">Seleziona...</option>
+                  {flussoCorrente.map(o => <option key={o}>{o}</option>)}
                 </select>
               </F>
             </div>
