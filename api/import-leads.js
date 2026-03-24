@@ -45,14 +45,20 @@ export default async function handler(req, res) {
         if (email) {
           const existing = await db.collection('leads')
             .where('email', '==', email).limit(1).get()
-          if (!existing.empty) {
+         if (!existing.empty) {
             await db.collection('leads').doc(existing.docs[0].id).update({
-              updatedAt: Date.now(), fonte,
+              updatedAt: Date.now(),
+              fonte,
+              ...(item.settore            && { settore: item.settore }),
+              ...(item.ruolo              && { ruolo: item.ruolo }),
+              ...(item.esperienzaVendita  && { esperienzaVendita: item.esperienzaVendita }),
+              ...(item.haCorsiVendita     && { haCorsiVendita: item.haCorsiVendita }),
+              ...(item.obiettivoLead      && { obiettivoLead: item.obiettivoLead }),
+              ...(item.citta              && { citta: item.citta }),
             })
             aggiornati++
             continue
           }
-        }
 
         await db.collection('leads').add({
           nome, cognome, email, telefono, funnel, fonte,
