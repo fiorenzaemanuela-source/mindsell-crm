@@ -3,12 +3,14 @@ import AgendaSetter from './pages/AgendaSetter.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import EmailCampagna from './pages/EmailCampagna.jsx'
 import Leads from './pages/Leads.jsx'
+import Impostazioni from './pages/Impostazioni.jsx'
 
 const NAV = [
-  { to: '/',       icon: '◈', label: 'Dashboard' },
-  { to: '/leads',  icon: '◉', label: 'Lead' },
-  { to: '/agenda', icon: '◷', label: 'Agenda Setter' },
-  { to: '/email',  icon: '✉', label: 'Campagne Email' },
+  { to: '/',             icon: '◈', label: 'Dashboard'      },
+  { to: '/leads',        icon: '◉', label: 'Lead'           },
+  { to: '/agenda',       icon: '◷', label: 'Agenda Setter'  },
+  { to: '/email',        icon: '✉', label: 'Campagne Email' },
+  { to: '/impostazioni', icon: '⚙', label: 'Impostazioni'   },
 ]
 
 export default function App() {
@@ -17,10 +19,11 @@ export default function App() {
       <Sidebar />
       <main style={{ flex: 1, overflow: 'auto', padding: '28px 32px' }}>
         <Routes>
-          <Route path="/"       element={<Dashboard />} />
-          <Route path="/leads"  element={<Leads />} />
-          <Route path="/agenda" element={<AgendaSetter />} />
-          <Route path="/email"  element={<EmailCampagna />} />
+          <Route path="/"             element={<Dashboard />}     />
+          <Route path="/leads"        element={<Leads />}         />
+          <Route path="/agenda"       element={<AgendaSetter />}  />
+          <Route path="/email"        element={<EmailCampagna />} />
+          <Route path="/impostazioni" element={<Impostazioni />}  />
         </Routes>
       </main>
     </div>
