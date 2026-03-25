@@ -513,7 +513,10 @@ export default function Leads() {
               <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Fonte</div>
               <select value={form.fonte} onChange={e => setForm(f => ({ ...f, fonte: e.target.value }))} style={{ width: '100%' }}>
                 <option value="">—</option>
-                {FONTE_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                {(form.funnel && crmConfig?.fontiFunnel?.[form.funnel]?.length > 0
+  ? crmConfig.fontiFunnel[form.funnel]
+  : FONTE_OPTIONS
+).map(o => <option key={o}>{o}</option>)}
               </select>
             </div>
             <div>
