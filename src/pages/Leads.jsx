@@ -11,27 +11,9 @@ const ESITI = [
   { id: 'non-interessato', label: 'Non interessato',     badge: 'badge-red'   },
 ]
 
-const FONTE_OPTIONS = [
-  'Meta Ads', 'Google Ads', 'LinkedIn', 'Referral', 'Organico', 'Webinar', 'Email', 'Import Sheet', 'Altro'
-]
-
+const FONTE_OPTIONS = ['Meta Ads', 'Google Ads', 'LinkedIn', 'Referral', 'Organico', 'Webinar', 'Email', 'Import Sheet', 'Altro']
 const CANALE_OPTIONS = ['Telefono', 'WhatsApp', 'Email', 'LinkedIn']
-
-const OFFERTE_OPTIONS = [
-  'Corso Online Base', 'Corso Online Avanzato', 'Consulenza 1:1',
-  'Programma di Gruppo', 'Webinar Gratuito', 'Partnership B2B',
-]
-
-const MATERIALI_OPTIONS = [
-  'PDF Introduttivo', 'Brochure Corsi', 'Case Study', 'Video Demo',
-  'Offerta Speciale', 'Proposta Commerciale',
-]
-
-const FLOW_OPTIONS = [
-  'Flow Benvenuto', 'Flow Nurturing', 'Flow Post-Consulenza',
-  'Flow Riattivazione', 'Flow Webinar', 'Flow Offerta',
-]
-
+const FLOW_OPTIONS = ['Flow Benvenuto', 'Flow Nurturing', 'Flow Post-Consulenza', 'Flow Riattivazione', 'Flow Webinar', 'Flow Offerta']
 const PRIORITA = ['Alta', 'Media', 'Bassa']
 const MOTIVI_PERDITA = ['Prezzo', 'Timing', 'Concorrente', 'Non qualificato', 'Non raggiungibile', 'Altro']
 
@@ -144,11 +126,6 @@ export default function Leads() {
     setView('list')
   }
 
-  const toggleArr = (key, val) => {
-    const arr = form[key] || []
-    setForm(f => ({ ...f, [key]: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val] }))
-  }
-
   const importCSV = async e => {
     const file = e.target.files[0]
     if (!file) return
@@ -221,27 +198,18 @@ export default function Leads() {
             <button className="btn-primary" onClick={openNew}>+ Nuovo lead</button>
           </div>
         </div>
-
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16, alignItems: 'flex-start' }}>
           {colonne.map(stato => {
             const leadsStato = filtered.filter(l => l.stage === stato)
-            const colori = {
-              'Alta': '#E24B4A', 'Media': '#EF9F27', 'Bassa': '#888'
-            }
             return (
               <div key={stato} style={{ minWidth: 230, maxWidth: 260, flexShrink: 0 }}>
-                <div style={{
-                  background: 'var(--card)', borderRadius: 10,
-                  padding: '12px 14px', marginBottom: 8,
-                  borderTop: '3px solid var(--accent)'
-                }}>
+                <div style={{ background: 'var(--card)', borderRadius: 10, padding: '12px 14px', marginBottom: 8, borderTop: '3px solid var(--accent)' }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt2)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>{stato}</div>
                   <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--txt)' }}>{leadsStato.length}</div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {leadsStato.map(l => (
-                    <div key={l.id} onClick={() => openDetail(l)} className="card"
-                      style={{ padding: '12px 14px', cursor: 'pointer', borderRadius: 8 }}>
+                    <div key={l.id} onClick={() => openDetail(l)} className="card" style={{ padding: '12px 14px', cursor: 'pointer', borderRadius: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                         <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--accentbg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--accent)', flexShrink: 0 }}>
                           {(l.nome?.[0] || '?').toUpperCase()}
@@ -250,16 +218,12 @@ export default function Leads() {
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--txt2)', marginBottom: 6 }}>{l.email || l.telefono || '—'}</div>
                       {l.priorita && (
-                        <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`} style={{ fontSize: 11 }}>
-                          {l.priorita}
-                        </span>
+                        <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`} style={{ fontSize: 11 }}>{l.priorita}</span>
                       )}
                     </div>
                   ))}
                   {leadsStato.length === 0 && (
-                    <div style={{ fontSize: 12, color: 'var(--txt3)', textAlign: 'center', padding: '16px 0', background: 'var(--card)', borderRadius: 8 }}>
-                      Nessun lead
-                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--txt3)', textAlign: 'center', padding: '16px 0', background: 'var(--card)', borderRadius: 8 }}>Nessun lead</div>
                   )}
                 </div>
               </div>
@@ -364,11 +328,11 @@ export default function Leads() {
     : STAGE_OPTIONS
 
   const TABS = [
-    { id: 'anagrafica',   label: 'Anagrafica'        },
-    { id: 'funnel',       label: 'Funnel & Stato'    },
-    { id: 'questionario', label: 'Questionario'       },
-    { id: 'attivita',     label: 'Attività'           },
-    { id: 'note',         label: 'Note & Scoring'    },
+    { id: 'anagrafica',   label: 'Anagrafica'     },
+    { id: 'funnel',       label: 'Funnel & Stato' },
+    { id: 'questionario', label: 'Questionario'   },
+    { id: 'attivita',     label: 'Attività'       },
+    { id: 'note',         label: 'Note & Scoring' },
   ]
 
   return (
@@ -481,13 +445,8 @@ export default function Leads() {
                 { label: 'Obiettivo / Priorità', val: form.obiettivoLead     },
                 { label: 'Città',                val: form.citta             },
               ]
-              const extra = form.datiQuestionario
-                ? Object.entries(form.datiQuestionario)
-                : []
-              const tutti = [
-                ...campi.filter(c => c.val),
-                ...extra.map(([k, v]) => ({ label: k, val: v }))
-              ]
+              const extra = form.datiQuestionario ? Object.entries(form.datiQuestionario) : []
+              const tutti = [...campi.filter(c => c.val), ...extra.map(([k, v]) => ({ label: k, val: v }))]
               if (tutti.length === 0) return (
                 <div style={{ color: 'var(--txt3)', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>
                   Nessun dato questionario disponibile per questo lead.
@@ -507,11 +466,33 @@ export default function Leads() {
           </div>
         )}
         {tab === 'attivita' && (
+          <AttivitaLead leadId={selected?.id} />
+        )}
+        {tab === 'note' && (
           <div>
-            <AttivitaLead leadId={selected?.id} />
+            <div className="form-row" style={{ marginBottom: 14 }}>
+              <F label="Priorità" half>
+                <select value={form.priorita} onChange={e => setForm(f => ({ ...f, priorita: e.target.value }))}>
+                  {PRIORITA.map(p => <option key={p}>{p}</option>)}
+                </select>
+              </F>
+              <F label="Valore potenziale (€)" half>
+                <input type="number" placeholder="es. 2500" value={form.valoreStimato} onChange={e => setForm(f => ({ ...f, valoreStimato: e.target.value }))} />
+              </F>
+            </div>
+            <F label="Note">
+              <textarea style={{ minHeight: 160 }}
+                placeholder="Note libere sul lead, contesto, osservazioni del setter..."
+                value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+            </F>
           </div>
         )}
-       function AttivitaLead({ leadId }) {
+      </div>
+    </div>
+  )
+}
+
+function AttivitaLead({ leadId }) {
   const [eventi, setEventi] = useState([])
   const [contenuti, setContenuti] = useState([])
   const [archivio, setArchivio] = useState([])
@@ -566,11 +547,9 @@ export default function Leads() {
     <div>
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Contenuti inviati</div>
-
         {contenuti.length === 0 && (
           <div style={{ fontSize: 13, color: 'var(--txt3)', marginBottom: 12 }}>Nessun contenuto inviato ancora.</div>
         )}
-
         {contenuti.sort((a, b) => b.createdAt - a.createdAt).map(c => (
           <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -578,9 +557,7 @@ export default function Leads() {
               <span style={{ fontSize: 14 }}>{c.nome}</span>
               {c.url && (
                 <a href={c.url} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>
-                  🔗 Apri
-                </a>
+                  style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>🔗 Apri</a>
               )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -592,24 +569,16 @@ export default function Leads() {
             </div>
           </div>
         ))}
-
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-          <select value={selectedContenuto}
-            onChange={e => setSelectedContenuto(e.target.value)}
-            style={{ flex: 1, minWidth: 200 }}>
+          <select value={selectedContenuto} onChange={e => setSelectedContenuto(e.target.value)} style={{ flex: 1, minWidth: 200 }}>
             <option value="">Seleziona dall'archivio...</option>
-            {archivio.map((c, i) => (
-              <option key={i} value={c.nome}>{c.tipo} — {c.nome}</option>
-            ))}
+            {archivio.map((c, i) => <option key={i} value={c.nome}>{c.tipo} — {c.nome}</option>)}
           </select>
-          <input type="date" value={dataInvio}
-            onChange={e => setDataInvio(e.target.value)}
-            style={{ width: 150 }} />
+          <input type="date" value={dataInvio} onChange={e => setDataInvio(e.target.value)} style={{ width: 150 }} />
           <button className="btn-primary" onClick={aggiungiContenuto} disabled={saving}>
             {saving ? '...' : '+ Aggiungi'}
           </button>
         </div>
-
         {archivio.length === 0 && (
           <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 8 }}>
             Nessun contenuto nell'archivio — aggiungili in Impostazioni → Contenuti.
@@ -622,19 +591,34 @@ export default function Leads() {
         {eventi.length === 0 && (
           <div style={{ fontSize: 13, color: 'var(--txt3)' }}>Nessun evento associato a questo lead.</div>
         )}
-        {eventi.sort((a, b) => (b.data || '') > (a.data || '') ? 1 : -1).map(e => {
-          const presente = (e.presenti || []).includes(leadId)
+        {eventi.map(e => {
+          const presenze = e.presenze?.[leadId] || {}
+          const giorni = e.giorni || []
+          const haPresenza = Object.values(presenze).some(v => v)
+          const tuttiPresenti = giorni.length > 0 && giorni.every((_, i) => presenze[`g${i}`])
           return (
-            <div key={e.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{e.nome}</div>
-                <div style={{ fontSize: 12, color: 'var(--txt2)' }}>
-                  {e.tipo} · {e.data ? new Date(e.data).toLocaleDateString('it-IT') : '—'}
+            <div key={e.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{e.nome}</div>
+                  <div style={{ fontSize: 12, color: 'var(--txt2)' }}>
+                    {e.tipo} · {e.dataInizio ? new Date(e.dataInizio).toLocaleDateString('it-IT') : '—'}
+                    {e.dataFine && e.dataFine !== e.dataInizio ? ` → ${new Date(e.dataFine).toLocaleDateString('it-IT')}` : ''}
+                  </div>
                 </div>
+                <span className={`badge ${tuttiPresenti ? 'badge-green' : haPresenza ? 'badge-amber' : 'badge-gray'}`}>
+                  {tuttiPresenti ? 'Presente tutti i gg' : haPresenza ? 'Presente parziale' : 'Assente'}
+                </span>
               </div>
-              <span className={`badge ${presente ? 'badge-green' : 'badge-gray'}`}>
-                {presente ? 'Presente' : 'Assente'}
-              </span>
+              {giorni.length > 1 && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                  {giorni.map((g, i) => (
+                    <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: presenze[`g${i}`] ? '#1D9E75' : 'var(--bg)', color: presenze[`g${i}`] ? '#fff' : 'var(--txt3)', border: '1px solid var(--border)' }}>
+                      Giorno {i+1} · {new Date(g).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )
         })}
