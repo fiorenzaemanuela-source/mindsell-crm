@@ -5,10 +5,10 @@ import {
 } from 'firebase/firestore'
 
 const ESITI = [
-  { id: 'consulenza',      label: 'Consulenza fissata', badge: 'badge-green' },
-  { id: 'richiamare',      label: 'Da richiamare',      badge: 'badge-amber' },
-  { id: 'non-risponde',    label: 'Non risponde',        badge: 'badge-gray'  },
-  { id: 'non-interessato', label: 'Non interessato',     badge: 'badge-red'   },
+  { id: 'consulenza',      label: 'Consulenza fissata' },
+  { id: 'richiamare',      label: 'Da richiamare'      },
+  { id: 'non-risponde',    label: 'Non risponde'        },
+  { id: 'non-interessato', label: 'Non interessato'     },
 ]
 
 const FONTE_OPTIONS = ['Meta Ads', 'Google Ads', 'LinkedIn', 'Referral', 'Organico', 'Webinar', 'Email', 'Import Sheet', 'Altro']
@@ -30,15 +30,8 @@ const EMPTY_LEAD = {
   funnel: '', stage: '', esito: '',
   fonte: '', canale: '', priorita: 'Alta',
   valoreStimato: '', flowEmail: '',
-  materiali: [], offerte: [],
-  tags: '', note: '',
-  motivoPerdita: '',
+  tags: '', note: '', motivoPerdita: '',
 }
-
-const badgeClass = esito => ({
-  consulenza: 'badge-green', richiamare: 'badge-amber',
-  'non-risponde': 'badge-gray', 'non-interessato': 'badge-red',
-}[esito] || 'badge-gray')
 
 const stageDot = stage => ({
   'Messaggio di benvenuto': '#378ADD',
@@ -54,6 +47,13 @@ const stageDot = stage => ({
   'Contatto non utile': '#E67E22',
 }[stage] || '#888')
 
+const esitoBadge = id => ({
+  consulenza: { bg: '#EAF3DE', color: '#3B6D11' },
+  richiamare: { bg: '#FAEEDA', color: '#854F0B' },
+  'non-risponde': { bg: '#F1EFE8', color: '#5F5E5A' },
+  'non-interessato': { bg: '#FCEBEB', color: '#A32D2D' },
+}[id] || { bg: '#F1EFE8', color: '#5F5E5A' })
+
 export default function Leads() {
   const [leads, setLeads] = useState([])
   const [crmConfig, setCrmConfig] = useState(null)
@@ -66,9 +66,9 @@ export default function Leads() {
   const [filterStage, setFilterStage] = useState('')
   const [filterPriorita, setFilterPriorita] = useState('')
   const [saving, setSaving] = useState(false)
-  const [tab, setTab] = useState('anagrafica')
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortDir, setSortDir] = useState('desc')
+  const [showQuestionario, setShowQuestionario] = useState(false)
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'leads'), snap => {
@@ -102,7 +102,7 @@ export default function Leads() {
     })
     .sort((a, b) => {
       let va, vb
-      if (sortBy === 'nome')      { va = (a.nome + ' ' + a.cognome).toLowerCase(); vb = (b.nome + ' ' + b.cognome).toLowerCase() }
+      if (sortBy === 'nome')        { va = (a.nome + ' ' + a.cognome).toLowerCase(); vb = (b.nome + ' ' + b.cognome).toLowerCase() }
       else if (sortBy === 'email')  { va = a.email || ''; vb = b.email || '' }
       else if (sortBy === 'funnel') { va = a.funnel || ''; vb = b.funnel || '' }
       else if (sortBy === 'priorita') {
@@ -114,8 +114,8 @@ export default function Leads() {
       return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
     })
 
-  const openNew    = () => { setForm({ ...EMPTY_LEAD }); setSelected(null); setTab('anagrafica'); setView('new') }
-  const openDetail = lead => { setForm({ ...EMPTY_LEAD, ...lead }); setSelected(lead); setTab('anagrafica'); setView('detail') }
+  const openNew    = () => { setForm({ ...EMPTY_LEAD }); setSelected(null); setView('new') }
+  const openDetail = lead => { setForm({ ...EMPTY_LEAD, ...lead }); setSelected(lead); setShowQuestionario(false); setView('detail') }
 
   const saveNew = async () => {
     if (!form.nome.trim()) return alert('Inserisci almeno il nome.')
@@ -159,9 +159,8 @@ export default function Leads() {
         email: row.email || '', telefono: row.telefono || row.phone || '',
         funnel: row.funnel || '', stage: row.stage || '',
         fonte: row.fonte || '', priorita: row.priorita || 'Alta',
-        tags: [], materiali: [], offerte: [], note: '',
-        flowEmail: '', canale: '', valoreStimato: '', esito: '',
-        motivoPerdita: '', createdAt: Date.now()
+        tags: [], note: '', flowEmail: '', canale: '', valoreStimato: '',
+        esito: '', motivoPerdita: '', createdAt: Date.now()
       })
       count++
     }
@@ -169,35 +168,17 @@ export default function Leads() {
     e.target.value = ''
   }
 
-  const F = ({ label, children, half }) => (
-    <div className="form-group" style={half ? { margin: 0 } : {}}>
-      <label className="form-label">{label}</label>
-      {children}
-    </div>
-  )
-
   const Toggle = () => (
     <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', borderRadius: 8, padding: 3 }}>
-      <button onClick={() => setViewMode('list')} style={{
-        padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 13, cursor: 'pointer',
-        background: viewMode === 'list' ? 'var(--card)' : 'transparent',
-        color: viewMode === 'list' ? 'var(--txt)' : 'var(--txt3)',
-        fontWeight: viewMode === 'list' ? 600 : 400,
-      }}>☰ Lista</button>
-      <button onClick={() => setViewMode('kanban')} style={{
-        padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 13, cursor: 'pointer',
-        background: viewMode === 'kanban' ? 'var(--card)' : 'transparent',
-        color: viewMode === 'kanban' ? 'var(--txt)' : 'var(--txt3)',
-        fontWeight: viewMode === 'kanban' ? 600 : 400,
-      }}>⊞ Kanban</button>
+      <button onClick={() => setViewMode('list')} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 13, cursor: 'pointer', background: viewMode === 'list' ? 'var(--card)' : 'transparent', color: viewMode === 'list' ? 'var(--txt)' : 'var(--txt3)', fontWeight: viewMode === 'list' ? 600 : 400 }}>☰ Lista</button>
+      <button onClick={() => setViewMode('kanban')} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 13, cursor: 'pointer', background: viewMode === 'kanban' ? 'var(--card)' : 'transparent', color: viewMode === 'kanban' ? 'var(--txt)' : 'var(--txt3)', fontWeight: viewMode === 'kanban' ? 600 : 400 }}>⊞ Kanban</button>
     </div>
   )
 
+  // ── KANBAN ─────────────────────────────────────────────────────────────────
   if (view === 'list' && viewMode === 'kanban') {
     const colonne = filterFunnel && crmConfig?.flussi?.[filterFunnel]?.length > 0
-      ? crmConfig.flussi[filterFunnel]
-      : STAGE_OPTIONS
-
+      ? crmConfig.flussi[filterFunnel] : STAGE_OPTIONS
     return (
       <div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -227,20 +208,14 @@ export default function Leads() {
                   {leadsStato.map(l => (
                     <div key={l.id} onClick={() => openDetail(l)} className="card" style={{ padding: '12px 14px', cursor: 'pointer', borderRadius: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--accentbg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--accent)', flexShrink: 0 }}>
-                          {(l.nome?.[0] || '?').toUpperCase()}
-                        </div>
+                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--accentbg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--accent)', flexShrink: 0 }}>{(l.nome?.[0] || '?').toUpperCase()}</div>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{l.nome} {l.cognome}</div>
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--txt2)', marginBottom: 6 }}>{l.email || l.telefono || '—'}</div>
-                      {l.priorita && (
-                        <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`} style={{ fontSize: 11 }}>{l.priorita}</span>
-                      )}
+                      {l.priorita && <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`} style={{ fontSize: 11 }}>{l.priorita}</span>}
                     </div>
                   ))}
-                  {leadsStato.length === 0 && (
-                    <div style={{ fontSize: 12, color: 'var(--txt3)', textAlign: 'center', padding: '16px 0', background: 'var(--card)', borderRadius: 8 }}>Nessun lead</div>
-                  )}
+                  {leadsStato.length === 0 && <div style={{ fontSize: 12, color: 'var(--txt3)', textAlign: 'center', padding: '16px 0', background: 'var(--card)', borderRadius: 8 }}>Nessun lead</div>}
                 </div>
               </div>
             )
@@ -250,6 +225,7 @@ export default function Leads() {
     )
   }
 
+  // ── LISTA ──────────────────────────────────────────────────────────────────
   if (view === 'list') return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -307,54 +283,49 @@ export default function Leads() {
                       if (!h.key) return
                       if (sortBy === h.key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
                       else { setSortBy(h.key); setSortDir('asc') }
-                    }} style={{
-                      padding: '10px 14px', textAlign: 'left', fontWeight: 600,
-                      color: sortBy === h.key ? 'var(--accent)' : 'var(--txt2)',
-                      fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em',
-                      whiteSpace: 'nowrap', cursor: h.key ? 'pointer' : 'default',
-                      userSelect: 'none',
-                    }}>
+                    }} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: sortBy === h.key ? 'var(--accent)' : 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', cursor: h.key ? 'pointer' : 'default', userSelect: 'none' }}>
                       {h.label}{sortBy === h.key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(l => (
-                  <tr key={l.id} onClick={() => openDetail(l)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
-                    onMouseLeave={e => e.currentTarget.style.background = ''}>
-                    <td style={{ padding: '11px 14px', fontWeight: 500 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accentbg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--accent)', flexShrink: 0 }}>
-                          {(l.nome?.[0] || '?').toUpperCase()}
+                {filtered.map(l => {
+                  const esito = ESITI.find(e => e.id === l.esito)
+                  const badge = esitoBadge(l.esito)
+                  return (
+                    <tr key={l.id} onClick={() => openDetail(l)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
+                      onMouseLeave={e => e.currentTarget.style.background = ''}>
+                      <td style={{ padding: '11px 14px', fontWeight: 500 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accentbg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--accent)', flexShrink: 0 }}>{(l.nome?.[0] || '?').toUpperCase()}</div>
+                          {l.nome} {l.cognome}
                         </div>
-                        {l.nome} {l.cognome}
-                      </div>
-                    </td>
-                    <td style={{ padding: '11px 14px', color: 'var(--txt2)' }}>{l.email || '—'}</td>
-                    <td style={{ padding: '11px 14px', color: 'var(--txt2)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.funnel || '—'}</td>
-                    <td style={{ padding: '11px 14px' }}>
-                      {l.stage && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: stageDot(l.stage), flexShrink: 0 }} />
-                        {l.stage}
-                      </span>}
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      {l.esito && <span className={`badge ${badgeClass(l.esito)}`}>{ESITI.find(e => e.id === l.esito)?.label}</span>}
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      {l.priorita && <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`}>{l.priorita}</span>}
-                    </td>
-                    <td style={{ padding: '11px 14px', color: 'var(--txt2)' }}>{l.fonte || '—'}</td>
-                    <td style={{ padding: '11px 14px', color: 'var(--txt2)', fontSize: 12, whiteSpace: 'nowrap' }}>
-                      {l.createdAt ? new Date(l.createdAt).toLocaleDateString('it-IT') : '—'}
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      <button className="btn-sm" onClick={e => { e.stopPropagation(); openDetail(l) }}>Apri</button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td style={{ padding: '11px 14px', color: 'var(--txt2)' }}>{l.email || '—'}</td>
+                      <td style={{ padding: '11px 14px', color: 'var(--txt2)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.funnel || '—'}</td>
+                      <td style={{ padding: '11px 14px' }}>
+                        {l.stage && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: stageDot(l.stage), flexShrink: 0 }} />{l.stage}
+                        </span>}
+                      </td>
+                      <td style={{ padding: '11px 14px' }}>
+                        {esito && <span style={{ background: badge.bg, color: badge.color, fontSize: 11, padding: '2px 8px', borderRadius: 4 }}>{esito.label}</span>}
+                      </td>
+                      <td style={{ padding: '11px 14px' }}>
+                        {l.priorita && <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`}>{l.priorita}</span>}
+                      </td>
+                      <td style={{ padding: '11px 14px', color: 'var(--txt2)' }}>{l.fonte || '—'}</td>
+                      <td style={{ padding: '11px 14px', color: 'var(--txt2)', fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {l.createdAt ? new Date(l.createdAt).toLocaleDateString('it-IT') : '—'}
+                      </td>
+                      <td style={{ padding: '11px 14px' }}>
+                        <button className="btn-sm" onClick={e => { e.stopPropagation(); openDetail(l) }}>Apri</button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -363,172 +334,315 @@ export default function Leads() {
     </div>
   )
 
-  const isNew = view === 'new'
-  const flussoCorrente = form.funnel && crmConfig?.flussi?.[form.funnel]?.length > 0
-    ? crmConfig.flussi[form.funnel]
-    : STAGE_OPTIONS
-
-  const TABS = [
-    { id: 'anagrafica',   label: 'Anagrafica'     },
-    { id: 'funnel',       label: 'Funnel & Stato' },
-    { id: 'questionario', label: 'Questionario'   },
-    { id: 'attivita',     label: 'Attività'       },
-    { id: 'note',         label: 'Note & Scoring' },
-  ]
-
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" style={{ padding: '7px 12px' }} onClick={() => setView('list')}>← Lead</button>
-          <h1 style={{ fontSize: 20, fontWeight: 600 }}>{isNew ? 'Nuovo lead' : `${form.nome} ${form.cognome}`}</h1>
-          {!isNew && form.priorita && (
-            <span className={`badge ${form.priorita === 'Alta' ? 'badge-red' : form.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`}>{form.priorita}</span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {!isNew && <button className="btn-ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => deleteLead(selected.id)}>Elimina</button>}
-          <button className="btn-primary" onClick={isNew ? saveNew : saveEdit} disabled={saving}>
-            {saving ? 'Salvataggio...' : isNew ? 'Crea lead' : 'Salva modifiche'}
+  // ── NUOVO LEAD ─────────────────────────────────────────────────────────────
+  if (view === 'new') {
+    const flussoNew = form.funnel && crmConfig?.flussi?.[form.funnel]?.length > 0
+      ? crmConfig.flussi[form.funnel] : STAGE_OPTIONS
+    const F = ({ label, children }) => (
+      <div className="form-group">
+        <label className="form-label">{label}</label>
+        {children}
+      </div>
+    )
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="btn-ghost" style={{ padding: '7px 12px' }} onClick={() => setView('list')}>← Lead</button>
+            <h1 style={{ fontSize: 20, fontWeight: 600 }}>Nuovo lead</h1>
+          </div>
+          <button className="btn-primary" onClick={saveNew} disabled={saving}>
+            {saving ? 'Salvataggio...' : 'Crea lead'}
           </button>
         </div>
-      </div>
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            padding: '8px 18px', border: 'none', background: 'none', fontSize: 14, cursor: 'pointer',
-            color: tab === t.id ? 'var(--txt)' : 'var(--txt3)',
-            fontWeight: tab === t.id ? 600 : 400,
-            borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
-            marginBottom: -1,
-          }}>{t.label}</button>
-        ))}
-      </div>
-      <div className="card" style={{ padding: 24 }}>
-        {tab === 'anagrafica' && (
-          <div>
-            <div className="form-row" style={{ marginBottom: 14 }}>
-              <F label="Nome *" half><input placeholder="Marco" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} /></F>
-              <F label="Cognome" half><input placeholder="Rossi" value={form.cognome} onChange={e => setForm(f => ({ ...f, cognome: e.target.value }))} /></F>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 14 }}>Anagrafica</div>
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <F label="Nome *"><input placeholder="Marco" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} /></F>
+              <F label="Cognome"><input placeholder="Rossi" value={form.cognome} onChange={e => setForm(f => ({ ...f, cognome: e.target.value }))} /></F>
             </div>
-            <div className="form-row" style={{ marginBottom: 14 }}>
-              <F label="Email" half><input type="email" placeholder="marco.rossi@email.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></F>
-              <F label="Telefono" half><input placeholder="+39 333 1234567" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} /></F>
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <F label="Email"><input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></F>
+              <F label="Telefono"><input value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} /></F>
             </div>
-            <div className="form-row" style={{ marginBottom: 14 }}>
-              <F label="Fonte" half>
+            <div className="form-row">
+              <F label="Fonte">
                 <select value={form.fonte} onChange={e => setForm(f => ({ ...f, fonte: e.target.value }))}>
                   <option value="">Seleziona...</option>
                   {FONTE_OPTIONS.map(o => <option key={o}>{o}</option>)}
                 </select>
               </F>
-              <F label="Canale preferito" half>
+              <F label="Canale">
                 <select value={form.canale} onChange={e => setForm(f => ({ ...f, canale: e.target.value }))}>
                   <option value="">Seleziona...</option>
                   {CANALE_OPTIONS.map(o => <option key={o}>{o}</option>)}
                 </select>
               </F>
             </div>
-            <F label="Tag (separati da virgola)">
-              <input placeholder="es. ha già fatto corsi, budget alto, decisore"
-                value={typeof form.tags === 'string' ? form.tags : (form.tags || []).join(', ')}
-                onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} />
-            </F>
           </div>
-        )}
-        {tab === 'funnel' && (
-          <div>
-            <div className="form-row" style={{ marginBottom: 14 }}>
-              <F label="Funnel di appartenenza" half>
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 14 }}>Percorso</div>
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <F label="Funnel">
                 <select value={form.funnel} onChange={e => setForm(f => ({ ...f, funnel: e.target.value, stage: '' }))}>
                   <option value="">Seleziona...</option>
                   {FUNNEL_OPTIONS.map(o => <option key={o}>{o}</option>)}
                 </select>
               </F>
-              <F label="Stato attuale" half>
+              <F label="Stato">
                 <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}>
                   <option value="">Seleziona...</option>
-                  {flussoCorrente.map(o => <option key={o}>{o}</option>)}
+                  {flussoNew.map(o => <option key={o}>{o}</option>)}
                 </select>
               </F>
             </div>
-            <div className="form-row" style={{ marginBottom: 14 }}>
-              <F label="Esito ultima chiamata" half>
-                <select value={form.esito} onChange={e => setForm(f => ({ ...f, esito: e.target.value }))}>
-                  <option value="">Nessun esito</option>
-                  {ESITI.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
-                </select>
-              </F>
-              <F label="Motivo perdita" half>
-                <select value={form.motivoPerdita} onChange={e => setForm(f => ({ ...f, motivoPerdita: e.target.value }))}
-                  disabled={form.esito !== 'non-interessato'}>
-                  <option value="">—</option>
-                  {MOTIVI_PERDITA.map(m => <option key={m}>{m}</option>)}
-                </select>
-              </F>
-            </div>
-            <F label="Flow email assegnato">
-              <select value={form.flowEmail} onChange={e => setForm(f => ({ ...f, flowEmail: e.target.value }))}>
-                <option value="">Nessun flow</option>
-                {FLOW_OPTIONS.map(o => <option key={o}>{o}</option>)}
-              </select>
-            </F>
-          </div>
-        )}
-        {tab === 'questionario' && (
-          <div>
-            {(() => {
-              const campi = [
-                { label: 'Settore',              val: form.settore           },
-                { label: 'Ruolo',                val: form.ruolo             },
-                { label: 'Esperienza vendita',   val: form.esperienzaVendita },
-                { label: 'Ha già fatto corsi',   val: form.haCorsiVendita    },
-                { label: 'Obiettivo / Priorità', val: form.obiettivoLead     },
-                { label: 'Città',                val: form.citta             },
-              ]
-              const extra = form.datiQuestionario ? Object.entries(form.datiQuestionario) : []
-              const tutti = [...campi.filter(c => c.val), ...extra.map(([k, v]) => ({ label: k, val: v }))]
-              if (tutti.length === 0) return (
-                <div style={{ color: 'var(--txt3)', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>
-                  Nessun dato questionario disponibile per questo lead.
-                </div>
-              )
-              return (
-                <div style={{ display: 'grid', gap: 12 }}>
-                  {tutti.map((c, i) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', paddingTop: 2 }}>{c.label}</div>
-                      <div style={{ fontSize: 14, color: 'var(--txt)' }}>{c.val}</div>
-                    </div>
-                  ))}
-                </div>
-              )
-            })()}
-          </div>
-        )}
-        {tab === 'attivita' && (
-          <AttivitaLead leadId={selected?.id} />
-        )}
-        {tab === 'note' && (
-          <div>
-            <div className="form-row" style={{ marginBottom: 14 }}>
-              <F label="Priorità" half>
+            <div className="form-row" style={{ marginBottom: 12 }}>
+              <F label="Priorità">
                 <select value={form.priorita} onChange={e => setForm(f => ({ ...f, priorita: e.target.value }))}>
                   {PRIORITA.map(p => <option key={p}>{p}</option>)}
                 </select>
               </F>
-              <F label="Valore potenziale (€)" half>
+              <F label="Valore potenziale (€)">
                 <input type="number" placeholder="es. 2500" value={form.valoreStimato} onChange={e => setForm(f => ({ ...f, valoreStimato: e.target.value }))} />
               </F>
             </div>
             <F label="Note">
-              <textarea style={{ minHeight: 160 }}
-                placeholder="Note libere sul lead, contesto, osservazioni del setter..."
-                value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+              <textarea style={{ minHeight: 80 }} value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
             </F>
           </div>
-        )}
+        </div>
       </div>
+    )
+  }
+
+  // ── DETTAGLIO LEAD ─────────────────────────────────────────────────────────
+  const flussoCorrente = form.funnel && crmConfig?.flussi?.[form.funnel]?.length > 0
+    ? crmConfig.flussi[form.funnel] : STAGE_OPTIONS
+
+  const haQuestionario = !!(form.settore || form.ruolo || form.esperienzaVendita || form.obiettivoLead || form.haCorsiVendita || form.citta || form.datiQuestionario)
+
+  const campiQ = [
+    { label: 'Settore',              val: form.settore           },
+    { label: 'Ruolo',                val: form.ruolo             },
+    { label: 'Esperienza vendita',   val: form.esperienzaVendita },
+    { label: 'Ha già fatto corsi',   val: form.haCorsiVendita    },
+    { label: 'Obiettivo / Priorità', val: form.obiettivoLead     },
+    { label: 'Città',                val: form.citta             },
+    ...(form.datiQuestionario ? Object.entries(form.datiQuestionario).map(([k, v]) => ({ label: k, val: v })) : [])
+  ].filter(c => c.val)
+
+  const S = ({ label, children }) => (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>{label}</div>
+      {children}
+    </div>
+  )
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button className="btn-ghost" style={{ padding: '7px 12px' }} onClick={() => setView('list')}>← Lead</button>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accentbg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: 'var(--accent)', flexShrink: 0 }}>
+            {(form.nome?.[0] || '?').toUpperCase()}
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 600 }}>{form.nome} {form.cognome}</span>
+          {form.priorita && (
+            <span className={`badge ${form.priorita === 'Alta' ? 'badge-red' : form.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`}>{form.priorita}</span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => deleteLead(selected.id)}>Elimina</button>
+          <button className="btn-primary" onClick={saveEdit} disabled={saving}>
+            {saving ? 'Salvataggio...' : 'Salva modifiche'}
+          </button>
+        </div>
+      </div>
+
+      {/* Overlay Questionario */}
+      {showQuestionario && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setShowQuestionario(false)}>
+          <div style={{ background: 'var(--card)', borderRadius: 12, padding: 24, maxWidth: 520, width: '90%', maxHeight: '80vh', overflowY: 'auto' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>Questionario</div>
+              <button onClick={() => setShowQuestionario(false)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--txt2)' }}>✕</button>
+            </div>
+            {campiQ.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--txt3)' }}>Nessun dato disponibile.</div>
+            ) : campiQ.map((c, i) => (
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', paddingTop: 2 }}>{c.label}</div>
+                <div style={{ fontSize: 13 }}>{c.val}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Riga 1: Anagrafica + Percorso */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+
+        {/* Anagrafica */}
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 14 }}>Anagrafica</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Nome</div>
+              <input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} style={{ width: '100%' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Cognome</div>
+              <input value={form.cognome} onChange={e => setForm(f => ({ ...f, cognome: e.target.value }))} style={{ width: '100%' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Email</div>
+              <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} style={{ width: '100%' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Telefono</div>
+              <input value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} style={{ width: '100%' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Fonte</div>
+              <select value={form.fonte} onChange={e => setForm(f => ({ ...f, fonte: e.target.value }))} style={{ width: '100%' }}>
+                <option value="">—</option>
+                {FONTE_OPTIONS.map(o => <option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Canale</div>
+              <select value={form.canale} onChange={e => setForm(f => ({ ...f, canale: e.target.value }))} style={{ width: '100%' }}>
+                <option value="">—</option>
+                {CANALE_OPTIONS.map(o => <option key={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 11, color: 'var(--txt2)' }}>
+              Inserito il: <strong>{form.createdAt ? new Date(form.createdAt).toLocaleDateString('it-IT') : '—'}</strong>
+            </div>
+            <div style={{ marginLeft: 'auto' }}>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Tag</div>
+              <input placeholder="tag1, tag2..." style={{ width: 160 }}
+                value={typeof form.tags === 'string' ? form.tags : (form.tags || []).join(', ')}
+                onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} />
+            </div>
+          </div>
+        </div>
+
+        {/* Percorso + Questionario indicator */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* Percorso */}
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 14 }}>Percorso</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Funnel</div>
+                <select value={form.funnel} onChange={e => setForm(f => ({ ...f, funnel: e.target.value, stage: '' }))} style={{ width: '100%' }}>
+                  <option value="">—</option>
+                  {FUNNEL_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Stato attuale</div>
+                <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))} style={{ width: '100%' }}>
+                  <option value="">—</option>
+                  {flussoCorrente.map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Esito ultima chiamata</div>
+                <select value={form.esito} onChange={e => setForm(f => ({ ...f, esito: e.target.value }))} style={{ width: '100%' }}>
+                  <option value="">Nessun esito</option>
+                  {ESITI.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
+                </select>
+              </div>
+              {form.esito === 'non-interessato' && (
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 3 }}>Motivo perdita</div>
+                  <select value={form.motivoPerdita} onChange={e => setForm(f => ({ ...f, motivoPerdita: e.target.value }))} style={{ width: '100%' }}>
+                    <option value="">—</option>
+                    {MOTIVI_PERDITA.map(m => <option key={m}>{m}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Questionario indicator */}
+          <div className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
+            onClick={() => haQuestionario && setShowQuestionario(true)}>
+            <span style={{ fontSize: 28, opacity: haQuestionario ? 1 : 0.25 }}>📋</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>Questionario</div>
+              <div style={{ fontSize: 12, color: haQuestionario ? '#3B6D11' : 'var(--txt3)' }}>
+                {haQuestionario ? `${campiQ.length} risposte disponibili — clicca per leggere` : 'Nessun dato'}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Riga 2: Attività + Flow email */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+
+        {/* Attività */}
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 12 }}>Attività</div>
+          <AttivitaLead leadId={selected?.id} />
+        </div>
+
+        {/* Flow email */}
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 12 }}>Flow email</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+            {FLOW_OPTIONS.map(o => (
+              <label key={o} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer', background: form.flowEmail === o ? 'var(--accentbg)' : 'transparent' }}>
+                <input type="radio" name="flowEmail" checked={form.flowEmail === o} onChange={() => setForm(f => ({ ...f, flowEmail: o }))} style={{ width: 'auto' }} />
+                <span style={{ fontSize: 13 }}>{o}</span>
+                {form.flowEmail === o && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>Attivo</span>}
+              </label>
+            ))}
+            {form.flowEmail && (
+              <button onClick={() => setForm(f => ({ ...f, flowEmail: '' }))} style={{ background: 'none', border: 'none', fontSize: 12, color: 'var(--txt3)', cursor: 'pointer', textAlign: 'left', padding: '4px 0' }}>
+                ✕ Rimuovi flow
+              </button>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Riga 3: Note + Scoring */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 10 }}>Note</div>
+          <textarea style={{ minHeight: 100, width: '100%' }}
+            placeholder="Note libere sul lead..."
+            value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+        </div>
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 12 }}>Scoring</div>
+          <S label="Priorità">
+            <select value={form.priorita} onChange={e => setForm(f => ({ ...f, priorita: e.target.value }))}>
+              {PRIORITA.map(p => <option key={p}>{p}</option>)}
+            </select>
+          </S>
+          <S label="Valore potenziale (€)">
+            <input type="number" placeholder="es. 2500" value={form.valoreStimato}
+              onChange={e => setForm(f => ({ ...f, valoreStimato: e.target.value }))} />
+          </S>
+        </div>
+      </div>
+
     </div>
   )
 }
@@ -544,18 +658,15 @@ function AttivitaLead({ leadId }) {
   useEffect(() => {
     if (!leadId) return
     const unsub = onSnapshot(collection(db, 'eventi'), snap => {
-      setEventi(snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .filter(e => (e.invitati || []).includes(leadId)))
+      setEventi(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(e => (e.invitati || []).includes(leadId)))
     })
     return () => unsub()
   }, [leadId])
 
   useEffect(() => {
     if (!leadId) return
-    const unsub = onSnapshot(
-      collection(db, 'leads', leadId, 'contenuti'),
-      snap => setContenuti(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    )
+    const unsub = onSnapshot(collection(db, 'leads', leadId, 'contenuti'),
+      snap => setContenuti(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
     return () => unsub()
   }, [leadId])
 
@@ -567,101 +678,60 @@ function AttivitaLead({ leadId }) {
   }, [])
 
   const aggiungiContenuto = async () => {
-    if (!selectedContenuto) return alert('Seleziona un contenuto dall\'archivio.')
+    if (!selectedContenuto) return alert('Seleziona un contenuto.')
     setSaving(true)
-    const contenutoArchivio = archivio.find(c => c.nome === selectedContenuto)
+    const c = archivio.find(c => c.nome === selectedContenuto)
     await addDoc(collection(db, 'leads', leadId, 'contenuti'), {
-      ...contenutoArchivio,
-      data: dataInvio || new Date().toISOString().split('T')[0],
-      createdAt: Date.now(),
+      ...c, data: dataInvio || new Date().toISOString().split('T')[0], createdAt: Date.now(),
     })
-    setSelectedContenuto('')
-    setDataInvio('')
-    setSaving(false)
+    setSelectedContenuto(''); setDataInvio(''); setSaving(false)
   }
 
-  const eliminaContenuto = async (id) => {
-    await deleteDoc(doc(db, 'leads', leadId, 'contenuti', id))
-  }
+  const eliminaContenuto = async id => await deleteDoc(doc(db, 'leads', leadId, 'contenuti', id))
 
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Contenuti inviati</div>
-        {contenuti.length === 0 && (
-          <div style={{ fontSize: 13, color: 'var(--txt3)', marginBottom: 12 }}>Nessun contenuto inviato ancora.</div>
-        )}
-        {contenuti.sort((a, b) => b.createdAt - a.createdAt).map(c => (
-          <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'var(--accentbg)', color: 'var(--accent)', fontWeight: 600 }}>{c.tipo}</span>
-              <span style={{ fontSize: 14 }}>{c.nome}</span>
-              {c.url && (
-                <a href={c.url} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>🔗 Apri</a>
-              )}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 12, color: 'var(--txt3)' }}>
-                {c.data ? new Date(c.data).toLocaleDateString('it-IT') : '—'}
-              </span>
-              <button onClick={() => eliminaContenuto(c.id)}
-                style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 13 }}>✕</button>
-            </div>
-          </div>
-        ))}
-        <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-          <select value={selectedContenuto} onChange={e => setSelectedContenuto(e.target.value)} style={{ flex: 1, minWidth: 200 }}>
-            <option value="">Seleziona dall'archivio...</option>
-            {archivio.map((c, i) => <option key={i} value={c.nome}>{c.tipo} — {c.nome}</option>)}
-          </select>
-          <input type="date" value={dataInvio} onChange={e => setDataInvio(e.target.value)} style={{ width: 150 }} />
-          <button className="btn-primary" onClick={aggiungiContenuto} disabled={saving}>
-            {saving ? '...' : '+ Aggiungi'}
-          </button>
+      {contenuti.length === 0 && eventi.length === 0 && (
+        <div style={{ fontSize: 12, color: 'var(--txt3)', marginBottom: 10 }}>Nessuna attività ancora.</div>
+      )}
+
+      {contenuti.sort((a, b) => b.createdAt - a.createdAt).map(c => (
+        <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, background: 'var(--accentbg)', color: 'var(--accent)', fontWeight: 600, flexShrink: 0 }}>{c.tipo}</span>
+          <span style={{ fontSize: 12, flex: 1 }}>{c.nome}</span>
+          {c.url && <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none', flexShrink: 0 }}>🔗</a>}
+          <span style={{ fontSize: 11, color: 'var(--txt3)', flexShrink: 0 }}>{c.data ? new Date(c.data).toLocaleDateString('it-IT') : '—'}</span>
+          <button onClick={() => eliminaContenuto(c.id)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, flexShrink: 0 }}>✕</button>
         </div>
-        {archivio.length === 0 && (
-          <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 8 }}>
-            Nessun contenuto nell'archivio — aggiungili in Impostazioni → Contenuti.
+      ))}
+
+      {eventi.map(e => {
+        const presenze = e.presenze?.[leadId] || {}
+        const giorni = e.giorni || []
+        const haPresenza = Object.values(presenze).some(v => v)
+        const tuttiPresenti = giorni.length > 0 && giorni.every((_, i) => presenze[`g${i}`])
+        return (
+          <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+            <span style={{ fontSize: 12, flex: 1 }}>{e.nome}</span>
+            <span style={{ fontSize: 11, color: 'var(--txt3)', flexShrink: 0 }}>
+              {e.dataInizio ? new Date(e.dataInizio).toLocaleDateString('it-IT') : '—'}
+            </span>
+            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, background: tuttiPresenti ? '#EAF3DE' : haPresenza ? '#FAEEDA' : '#F1EFE8', color: tuttiPresenti ? '#3B6D11' : haPresenza ? '#854F0B' : '#5F5E5A', flexShrink: 0 }}>
+              {tuttiPresenti ? 'Presente' : haPresenza ? 'Parziale' : 'Assente'}
+            </span>
           </div>
-        )}
-      </div>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Partecipazione eventi</div>
-        {eventi.length === 0 && (
-          <div style={{ fontSize: 13, color: 'var(--txt3)' }}>Nessun evento associato a questo lead.</div>
-        )}
-        {eventi.map(e => {
-          const presenze = e.presenze?.[leadId] || {}
-          const giorni = e.giorni || []
-          const haPresenza = Object.values(presenze).some(v => v)
-          const tuttiPresenti = giorni.length > 0 && giorni.every((_, i) => presenze[`g${i}`])
-          return (
-            <div key={e.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{e.nome}</div>
-                  <div style={{ fontSize: 12, color: 'var(--txt2)' }}>
-                    {e.tipo} · {e.dataInizio ? new Date(e.dataInizio).toLocaleDateString('it-IT') : '—'}
-                    {e.dataFine && e.dataFine !== e.dataInizio ? ` → ${new Date(e.dataFine).toLocaleDateString('it-IT')}` : ''}
-                  </div>
-                </div>
-                <span className={`badge ${tuttiPresenti ? 'badge-green' : haPresenza ? 'badge-amber' : 'badge-gray'}`}>
-                  {tuttiPresenti ? 'Presente tutti i gg' : haPresenza ? 'Presente parziale' : 'Assente'}
-                </span>
-              </div>
-              {giorni.length > 1 && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-                  {giorni.map((g, i) => (
-                    <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: presenze[`g${i}`] ? '#1D9E75' : 'var(--bg)', color: presenze[`g${i}`] ? '#fff' : 'var(--txt3)', border: '1px solid var(--border)' }}>
-                      Giorno {i+1} · {new Date(g).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
+        )
+      })}
+
+      <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+        <select value={selectedContenuto} onChange={e => setSelectedContenuto(e.target.value)} style={{ flex: 1, minWidth: 150, fontSize: 12 }}>
+          <option value="">Aggiungi contenuto...</option>
+          {archivio.map((c, i) => <option key={i} value={c.nome}>{c.tipo} — {c.nome}</option>)}
+        </select>
+        <input type="date" value={dataInvio} onChange={e => setDataInvio(e.target.value)} style={{ width: 130, fontSize: 12 }} />
+        <button className="btn-primary" onClick={aggiungiContenuto} disabled={saving} style={{ fontSize: 12, padding: '6px 12px' }}>
+          {saving ? '...' : '+'}
+        </button>
       </div>
     </div>
   )
