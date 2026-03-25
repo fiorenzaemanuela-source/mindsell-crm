@@ -368,10 +368,13 @@ export default function Leads() {
             </div>
             <div className="form-row">
               <F label="Fonte">
-                <select value={form.fonte} onChange={e => setForm(f => ({ ...f, fonte: e.target.value }))}>
-                  <option value="">Seleziona...</option>
-                  {FONTE_OPTIONS.map(o => <option key={o}>{o}</option>)}
-                </select>
+                <select value={form.fonte} onChange={e => setForm(f => ({ ...f, fonte: e.target.value }))} style={{ width: '100%' }}>
+  <option value="">—</option>
+  {(form.funnel && crmConfig?.fontiFunnel?.[form.funnel]?.length > 0
+    ? crmConfig.fontiFunnel[form.funnel]
+    : FONTE_OPTIONS
+  ).map(o => <option key={o}>{o}</option>)}
+</select>
               </F>
               <F label="Canale">
                 <select value={form.canale} onChange={e => setForm(f => ({ ...f, canale: e.target.value }))}>
