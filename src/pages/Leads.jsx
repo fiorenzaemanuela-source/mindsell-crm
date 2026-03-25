@@ -467,8 +467,8 @@ export default function Leads() {
     </div>
   )
 
-  return (
-    <div>
+ return (
+    <div style={{ position: 'relative' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -491,7 +491,7 @@ export default function Leads() {
 
       {/* Overlay Questionario */}
       {showQuestionario && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 80 }}
           onClick={() => setShowQuestionario(false)}>
           <div style={{ background: 'var(--card)', borderRadius: 12, padding: 24, maxWidth: 520, width: '90%', maxHeight: '80vh', overflowY: 'auto' }}
             onClick={e => e.stopPropagation()}>
