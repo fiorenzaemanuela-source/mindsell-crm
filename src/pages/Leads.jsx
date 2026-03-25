@@ -489,29 +489,7 @@ export default function Leads() {
         </div>
       </div>
 
-      {/* Overlay Questionario */}
-      {showQuestionario && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 80 }}
-          onClick={() => setShowQuestionario(false)}>
-          <div style={{ background: 'var(--card)', borderRadius: 12, padding: 24, maxWidth: 520, width: '90%', maxHeight: '80vh', overflowY: 'auto' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 600 }}>Questionario</div>
-              <button onClick={() => setShowQuestionario(false)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--txt2)' }}>✕</button>
-            </div>
-            {campiQ.length === 0 ? (
-              <div style={{ fontSize: 13, color: 'var(--txt3)' }}>Nessun dato disponibile.</div>
-            ) : campiQ.map((c, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', paddingTop: 2 }}>{c.label}</div>
-                <div style={{ fontSize: 13 }}>{c.val}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Riga 1: Anagrafica + Percorso */}
+          {/* Riga 1: Anagrafica + Percorso */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
 
         {/* Anagrafica */}
@@ -616,17 +594,29 @@ export default function Leads() {
             </div>
           </div>
 
-          {/* Questionario indicator */}
-          <div className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
-            onClick={() => haQuestionario && setShowQuestionario(true)}>
-            <span style={{ fontSize: 28, opacity: haQuestionario ? 1 : 0.25 }}>📋</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>Questionario</div>
-              <div style={{ fontSize: 12, color: haQuestionario ? '#3B6D11' : 'var(--txt3)' }}>
-                {haQuestionario ? `${campiQ.length} risposte disponibili — clicca per leggere` : 'Nessun dato'}
-              </div>
-            </div>
-          </div>
+         <div className="card" style={{ padding: 16 }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: haQuestionario ? 'pointer' : 'default' }}
+    onClick={() => haQuestionario && setShowQuestionario(v => !v)}>
+    <span style={{ fontSize: 28, opacity: haQuestionario ? 1 : 0.25 }}>📋</span>
+    <div style={{ flex: 1 }}>
+      <div style={{ fontSize: 13, fontWeight: 600 }}>Questionario</div>
+      <div style={{ fontSize: 12, color: haQuestionario ? '#3B6D11' : 'var(--txt3)' }}>
+        {haQuestionario ? `${campiQ.length} risposte — clicca per ${showQuestionario ? 'chiudere' : 'leggere'}` : 'Nessun dato'}
+      </div>
+    </div>
+    {haQuestionario && <span style={{ fontSize: 12, color: 'var(--txt3)' }}>{showQuestionario ? '▲' : '▼'}</span>}
+  </div>
+  {showQuestionario && haQuestionario && (
+    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+      {campiQ.map((c, i) => (
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{c.label}</div>
+          <div style={{ fontSize: 12 }}>{c.val}</div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
         </div>
       </div>
