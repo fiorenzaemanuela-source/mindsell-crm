@@ -397,7 +397,7 @@ export default function Leads() {
     stage: '',
     fonte: fonti?.length === 1 ? fonti[0] : prev.fonte
   }))
-}}
+}}>
                   <option value="">Seleziona...</option>
                   {FUNNEL_OPTIONS.map(o => <option key={o}>{o}</option>)}
                 </select>
