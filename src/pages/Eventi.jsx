@@ -14,6 +14,8 @@ export default function Eventi() {
   const [form, setForm] = useState({ nome: '', data: '', tipo: 'Webinar', note: '' })
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [filterFunnel, setFilterFunnel] = useState('')
+  const [filterPriorita, setFilterPriorita] = useState('')
   const [tab, setTab] = useState('dettagli')
 
   useEffect(() => {
@@ -53,7 +55,6 @@ export default function Eventi() {
     const isInvitato = (evento.invitati || []).includes(leadId)
     await updateDoc(doc(db, 'eventi', eventoId), {
       invitati: isInvitato ? arrayRemove(leadId) : arrayUnion(leadId),
-      // Se rimosso dagli invitati, rimuovi anche dai presenti
       ...(isInvitato && { presenti: arrayRemove(leadId) })
     })
   }
@@ -61,17 +62,11 @@ export default function Eventi() {
   const togglePresente = async (eventoId, leadId) => {
     const evento = eventi.find(e => e.id === eventoId)
     const isPresente = (evento.presenti || []).includes(leadId)
-
     await updateDoc(doc(db, 'eventi', eventoId), {
       presenti: isPresente ? arrayRemove(leadId) : arrayUnion(leadId)
     })
-
-    // Se presente, aggiorna priorità lead ad Alta
     if (!isPresente) {
-      await updateDoc(doc(db, 'leads', leadId), {
-        priorita: 'Alta',
-        updatedAt: Date.now(),
-      })
+      await updateDoc(doc(db, 'leads', leadId), { priorita: 'Alta', updatedAt: Date.now() })
     }
   }
 
@@ -88,7 +83,6 @@ export default function Eventi() {
     setView('new')
   }
 
-  // ── LISTA EVENTI ────────────────────────────────────────────────────────────
   if (view === 'list') return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
@@ -98,7 +92,6 @@ export default function Eventi() {
         </div>
         <button className="btn-primary" onClick={openNew}>+ Nuovo evento</button>
       </div>
-
       {eventi.length === 0 ? (
         <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--txt3)' }}>
           <div style={{ fontSize: 28, marginBottom: 8 }}>◈</div>
@@ -107,9 +100,9 @@ export default function Eventi() {
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
           {eventi.sort((a, b) => (a.data || '') > (b.data || '') ? -1 : 1).map(e => {
-            const invitati = e.invitati?.length || 0
-            const presenti = e.presenti?.length || 0
-            const tasso = invitati > 0 ? Math.round((presenti / invitati) * 100) : 0
+            const inv = e.invitati?.length || 0
+            const pre = e.presenti?.length || 0
+            const tasso = inv > 0 ? Math.round((pre / inv) * 100) : 0
             return (
               <div key={e.id} className="card" style={{ padding: '18px 20px', cursor: 'pointer' }} onClick={() => openEdit(e)}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -121,15 +114,15 @@ export default function Eventi() {
                   </div>
                   <div style={{ display: 'flex', gap: 20 }}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>{invitati}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>{inv}</div>
                       <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Invitati</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--green, #1D9E75)' }}>{presenti}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: '#1D9E75' }}>{pre}</div>
                       <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Presenti</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: tasso >= 50 ? 'var(--green, #1D9E75)' : 'var(--amber, #EF9F27)' }}>{tasso}%</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: tasso >= 50 ? '#1D9E75' : '#EF9F27' }}>{tasso}%</div>
                       <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Tasso</div>
                     </div>
                   </div>
@@ -142,7 +135,6 @@ export default function Eventi() {
     </div>
   )
 
-  // ── NUOVO EVENTO ────────────────────────────────────────────────────────────
   if (view === 'new') return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
@@ -158,8 +150,7 @@ export default function Eventi() {
         <div className="form-row" style={{ marginBottom: 14 }}>
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label">Data</label>
-            <input type="date" value={form.data}
-              onChange={e => setForm(f => ({ ...f, data: e.target.value }))} />
+            <input type="date" value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))} />
           </div>
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label">Tipo</label>
@@ -171,8 +162,7 @@ export default function Eventi() {
         <div className="form-group" style={{ marginBottom: 20 }}>
           <label className="form-label">Note</label>
           <textarea placeholder="Note sull'evento..." value={form.note}
-            onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
-            style={{ minHeight: 80 }} />
+            onChange={e => setForm(f => ({ ...f, note: e.target.value }))} style={{ minHeight: 80 }} />
         </div>
         <button className="btn-primary" onClick={saveEvento} disabled={saving}>
           {saving ? 'Salvataggio...' : 'Crea evento'}
@@ -181,7 +171,6 @@ export default function Eventi() {
     </div>
   )
 
-  // ── DETTAGLIO EVENTO ────────────────────────────────────────────────────────
   const evento = eventi.find(e => e.id === selected?.id) || selected
   if (!evento) return null
 
@@ -191,12 +180,15 @@ export default function Eventi() {
 
   const leadsFiltrati = leads.filter(l => {
     const q = search.toLowerCase()
-    return !q || (l.nome + ' ' + l.cognome).toLowerCase().includes(q) || (l.email || '').toLowerCase().includes(q)
+    const matchSearch = !q || (l.nome + ' ' + l.cognome).toLowerCase().includes(q) || (l.email || '').toLowerCase().includes(q)
+    const matchFunnel = !filterFunnel || l.funnel === filterFunnel
+    const matchPriorita = !filterPriorita || l.priorita === filterPriorita
+    return matchSearch && matchFunnel && matchPriorita
   })
 
   const TABS = [
-    { id: 'dettagli',  label: 'Dettagli'  },
-    { id: 'invitati',  label: `Invitati (${invitati.length})` },
+    { id: 'dettagli',    label: 'Dettagli' },
+    { id: 'invitati',    label: `Invitati (${invitati.length})` },
     { id: 'statistiche', label: 'Statistiche' },
   ]
 
@@ -257,15 +249,34 @@ export default function Eventi() {
 
       {tab === 'invitati' && (
         <div>
-          <input placeholder="Cerca lead per nome o email..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            style={{ marginBottom: 16, width: '100%', maxWidth: 400 }} />
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <input placeholder="Cerca per nome o email..."
+              value={search} onChange={e => setSearch(e.target.value)}
+              style={{ flex: 1, minWidth: 200 }} />
+            <select value={filterFunnel} onChange={e => setFilterFunnel(e.target.value)} style={{ width: 220 }}>
+              <option value="">Tutti i funnel</option>
+              {[...new Set(leads.map(l => l.funnel).filter(Boolean))].map(f => (
+                <option key={f}>{f}</option>
+              ))}
+            </select>
+            <select value={filterPriorita} onChange={e => setFilterPriorita(e.target.value)} style={{ width: 160 }}>
+              <option value="">Tutte le priorità</option>
+              {['Alta', 'Media', 'Bassa'].map(p => <option key={p}>{p}</option>)}
+            </select>
+            <button className="btn-ghost" style={{ fontSize: 13, whiteSpace: 'nowrap' }} onClick={async () => {
+              for (const l of leadsFiltrati) {
+                if (!invitati.includes(l.id)) {
+                  await updateDoc(doc(db, 'eventi', evento.id), { invitati: arrayUnion(l.id) })
+                }
+              }
+            }}>✓ Invita tutti ({leadsFiltrati.length})</button>
+          </div>
 
           <div className="card" style={{ overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-                  {['Lead', 'Funnel', 'Invitato', 'Presente'].map(h => (
+                  {['Lead', 'Funnel', 'Priorità', 'Invitato', 'Presente'].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</th>
                   ))}
                 </tr>
@@ -281,6 +292,9 @@ export default function Eventi() {
                         <div style={{ fontSize: 12, color: 'var(--txt2)' }}>{l.email}</div>
                       </td>
                       <td style={{ padding: '11px 14px', color: 'var(--txt2)', fontSize: 12 }}>{l.funnel || '—'}</td>
+                      <td style={{ padding: '11px 14px' }}>
+                        {l.priorita && <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`}>{l.priorita}</span>}
+                      </td>
                       <td style={{ padding: '11px 14px' }}>
                         <input type="checkbox" checked={isInvitato}
                           onChange={() => toggleInvitato(evento.id, l.id)} />
@@ -302,10 +316,10 @@ export default function Eventi() {
       {tab === 'statistiche' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
           {[
-            { label: 'Invitati', value: invitati.length, color: 'var(--accent)' },
-            { label: 'Presenti', value: presenti.length, color: 'var(--green, #1D9E75)' },
-            { label: 'Assenti', value: invitati.length - presenti.length, color: 'var(--amber, #EF9F27)' },
-            { label: 'Tasso partecipazione', value: tasso + '%', color: tasso >= 50 ? 'var(--green, #1D9E75)' : 'var(--red, #E24B4A)' },
+            { label: 'Invitati',             value: invitati.length,                    color: 'var(--accent)' },
+            { label: 'Presenti',             value: presenti.length,                    color: '#1D9E75' },
+            { label: 'Assenti',              value: invitati.length - presenti.length,  color: '#EF9F27' },
+            { label: 'Tasso partecipazione', value: tasso + '%',                        color: tasso >= 50 ? '#1D9E75' : '#E24B4A' },
           ].map(s => (
             <div key={s.label} className="card" style={{ padding: '18px 20px' }}>
               <div style={{ fontSize: 12, color: 'var(--txt2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 8 }}>{s.label}</div>
