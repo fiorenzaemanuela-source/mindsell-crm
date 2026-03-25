@@ -364,11 +364,12 @@ export default function Leads() {
     : STAGE_OPTIONS
 
   const TABS = [
-    { id: 'anagrafica', label: 'Anagrafica'        },
-    { id: 'funnel',     label: 'Funnel & Stato'    },
-    { id: 'questionario', label: 'Questionario'      },
-    { id: 'materiali',  label: 'Materiali & Offerte'},
-    { id: 'note',       label: 'Note & Scoring'    },
+    { id: 'anagrafica',   label: 'Anagrafica'        },
+    { id: 'funnel',       label: 'Funnel & Stato'    },
+    { id: 'questionario', label: 'Questionario'       },
+    { id: 'attivita',     label: 'Attività'           },
+    { id: 'materiali',    label: 'Materiali & Offerte'},
+    { id: 'note',         label: 'Note & Scoring'    },
   ]
 
   return (
@@ -506,7 +507,12 @@ export default function Leads() {
             })()}
           </div>
         )}
-        {tab === 'materiali' && (
+        {tab === 'attivita' && (
+          <div>
+            <AttivitaLead leadId={selected?.id} />
+          </div>
+        )}
+       {tab === 'materiali' && (
           <div>
             <div style={{ marginBottom: 20 }}>
               <div className="form-label" style={{ marginBottom: 10 }}>Materiali inviati</div>
@@ -551,6 +557,119 @@ export default function Leads() {
             </F>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+function AttivitaLead({ leadId }) {
+  const [eventi, setEventi] = useState([])
+  const [contenuti, setContenuti] = useState([])
+  const [nuovoContenuto, setNuovoContenuto] = useState({ tipo: 'PDF', nome: '', data: '' })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!leadId) return
+    const unsub = onSnapshot(collection(db, 'eventi'), snap => {
+      const eventiLead = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(e => (e.invitati || []).includes(leadId))
+      setEventi(eventiLead)
+    })
+    return () => unsub()
+  }, [leadId])
+
+  useEffect(() => {
+    if (!leadId) return
+    const unsub = onSnapshot(
+      collection(db, 'leads', leadId, 'contenuti'),
+      snap => setContenuti(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    )
+    return () => unsub()
+  }, [leadId])
+
+  const aggiungiContenuto = async () => {
+    if (!nuovoContenuto.nome.trim()) return alert('Inserisci il nome del contenuto.')
+    setSaving(true)
+    await addDoc(collection(db, 'leads', leadId, 'contenuti'), {
+      ...nuovoContenuto,
+      data: nuovoContenuto.data || new Date().toISOString().split('T')[0],
+      createdAt: Date.now(),
+    })
+    setNuovoContenuto({ tipo: 'PDF', nome: '', data: '' })
+    setSaving(false)
+  }
+
+  const eliminaContenuto = async (id) => {
+    await deleteDoc(doc(db, 'leads', leadId, 'contenuti', id))
+  }
+
+  const TIPI_CONTENUTO = ['PDF', 'Video', 'Link', 'Offerta commerciale']
+
+  return (
+    <div>
+      {/* Contenuti inviati */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Contenuti inviati</div>
+        {contenuti.length === 0 && (
+          <div style={{ fontSize: 13, color: 'var(--txt3)', marginBottom: 12 }}>Nessun contenuto inviato ancora.</div>
+        )}
+        {contenuti.sort((a, b) => b.createdAt - a.createdAt).map(c => (
+          <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+            <div>
+              <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, background: 'var(--accentbg)', color: 'var(--accent)', fontWeight: 600, marginRight: 8 }}>{c.tipo}</span>
+              <span style={{ fontSize: 14 }}>{c.nome}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 12, color: 'var(--txt3)' }}>
+                {c.data ? new Date(c.data).toLocaleDateString('it-IT') : '—'}
+              </span>
+              <button onClick={() => eliminaContenuto(c.id)}
+                style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 13 }}>✕</button>
+            </div>
+          </div>
+        ))}
+
+        {/* Aggiungi contenuto */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+          <select value={nuovoContenuto.tipo}
+            onChange={e => setNuovoContenuto(n => ({ ...n, tipo: e.target.value }))}
+            style={{ width: 140 }}>
+            {TIPI_CONTENUTO.map(t => <option key={t}>{t}</option>)}
+          </select>
+          <input placeholder="Nome contenuto..." value={nuovoContenuto.nome}
+            onChange={e => setNuovoContenuto(n => ({ ...n, nome: e.target.value }))}
+            style={{ flex: 1, minWidth: 160 }} />
+          <input type="date" value={nuovoContenuto.data}
+            onChange={e => setNuovoContenuto(n => ({ ...n, data: e.target.value }))}
+            style={{ width: 140 }} />
+          <button className="btn-primary" onClick={aggiungiContenuto} disabled={saving}>
+            {saving ? '...' : '+ Aggiungi'}
+          </button>
+        </div>
+      </div>
+
+      {/* Eventi */}
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Partecipazione eventi</div>
+        {eventi.length === 0 && (
+          <div style={{ fontSize: 13, color: 'var(--txt3)' }}>Nessun evento associato a questo lead.</div>
+        )}
+        {eventi.sort((a, b) => (b.data || '') > (a.data || '') ? 1 : -1).map(e => {
+          const presente = (e.presenti || []).includes(leadId)
+          return (
+            <div key={e.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 500 }}>{e.nome}</div>
+                <div style={{ fontSize: 12, color: 'var(--txt2)' }}>
+                  {e.tipo} · {e.data ? new Date(e.data).toLocaleDateString('it-IT') : '—'}
+                </div>
+              </div>
+              <span className={`badge ${presente ? 'badge-green' : 'badge-gray'}`}>
+                {presente ? 'Presente' : 'Assente'}
+              </span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
