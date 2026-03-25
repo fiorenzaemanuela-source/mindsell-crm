@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { db } from '../firebase'
 import {
-  collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, arrayUnion, arrayRemove
+  collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc
 } from 'firebase/firestore'
 
 const TIPI_EVENTO = ['Webinar', 'Aula didattica gratuita']
@@ -11,7 +11,7 @@ export default function Eventi() {
   const [leads, setLeads] = useState([])
   const [view, setView] = useState('list')
   const [selected, setSelected] = useState(null)
-  const [form, setForm] = useState({ nome: '', data: '', tipo: 'Webinar', note: '' })
+  const [form, setForm] = useState({ nome: '', dataInizio: '', dataFine: '', tipo: 'Webinar', note: '' })
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [filterFunnel, setFilterFunnel] = useState('')
@@ -28,20 +28,36 @@ export default function Eventi() {
     return () => { unsub1(); unsub2() }
   }, [])
 
+  // Calcola array di date tra inizio e fine
+  const calcolaGiorni = (inizio, fine) => {
+    if (!inizio) return []
+    if (!fine || fine === inizio) return [inizio]
+    const giorni = []
+    const d = new Date(inizio)
+    const f = new Date(fine)
+    while (d <= f) {
+      giorni.push(d.toISOString().split('T')[0])
+      d.setDate(d.getDate() + 1)
+    }
+    return giorni
+  }
+
   const saveEvento = async () => {
     if (!form.nome.trim()) return alert('Inserisci il nome evento.')
     setSaving(true)
+    const giorni = calcolaGiorni(form.dataInizio, form.dataFine)
+    const presenze = {} // { leadId: { giorno_0: true/false, giorno_1: true/false } }
     if (selected) {
-      await updateDoc(doc(db, 'eventi', selected.id), { ...form, updatedAt: Date.now() })
+      await updateDoc(doc(db, 'eventi', selected.id), { ...form, giorni, updatedAt: Date.now() })
     } else {
       await addDoc(collection(db, 'eventi'), {
-        ...form, invitati: [], presenti: [], createdAt: Date.now()
+        ...form, giorni, invitati: [], presenze, createdAt: Date.now()
       })
     }
     setSaving(false)
     setView('list')
     setSelected(null)
-    setForm({ nome: '', data: '', tipo: 'Webinar', note: '' })
+    setForm({ nome: '', dataInizio: '', dataFine: '', tipo: 'Webinar', note: '' })
   }
 
   const deleteEvento = async id => {
@@ -52,37 +68,72 @@ export default function Eventi() {
 
   const toggleInvitato = async (eventoId, leadId) => {
     const evento = eventi.find(e => e.id === eventoId)
-    const isInvitato = (evento.invitati || []).includes(leadId)
-    await updateDoc(doc(db, 'eventi', eventoId), {
-      invitati: isInvitato ? arrayRemove(leadId) : arrayUnion(leadId),
-      ...(isInvitato && { presenti: arrayRemove(leadId) })
-    })
+    const invitati = evento.invitati || []
+    const isInvitato = invitati.includes(leadId)
+    const nuoviInvitati = isInvitato
+      ? invitati.filter(id => id !== leadId)
+      : [...invitati, leadId]
+    // Se rimosso, cancella anche presenze
+    const presenze = { ...(evento.presenze || {}) }
+    if (isInvitato) delete presenze[leadId]
+    await updateDoc(doc(db, 'eventi', eventoId), { invitati: nuoviInvitati, presenze })
   }
 
-  const togglePresente = async (eventoId, leadId) => {
+  const togglePresenza = async (eventoId, leadId, giornoIndex) => {
     const evento = eventi.find(e => e.id === eventoId)
-    const isPresente = (evento.presenti || []).includes(leadId)
-    await updateDoc(doc(db, 'eventi', eventoId), {
-      presenti: isPresente ? arrayRemove(leadId) : arrayUnion(leadId)
-    })
-    if (!isPresente) {
+    const presenze = { ...(evento.presenze || {}) }
+    if (!presenze[leadId]) presenze[leadId] = {}
+    presenze[leadId][`g${giornoIndex}`] = !presenze[leadId][`g${giornoIndex}`]
+
+    await updateDoc(doc(db, 'eventi', eventoId), { presenze })
+
+    // Se presente almeno un giorno → priorità Alta
+    const haPresenza = Object.values(presenze[leadId]).some(v => v)
+    if (haPresenza) {
       await updateDoc(doc(db, 'leads', leadId), { priorita: 'Alta', updatedAt: Date.now() })
     }
   }
 
+  const invitaTutti = async (eventoId, leadsDaInvitare) => {
+    const evento = eventi.find(e => e.id === eventoId)
+    const invitati = evento.invitati || []
+    const nuovi = leadsDaInvitare.filter(l => !invitati.includes(l.id)).map(l => l.id)
+    if (nuovi.length === 0) return
+    await updateDoc(doc(db, 'eventi', eventoId), {
+      invitati: [...invitati, ...nuovi]
+    })
+  }
+
+  const deselezionaTutti = async (eventoId, leadsDaRimuovere) => {
+    const evento = eventi.find(e => e.id === eventoId)
+    const invitati = evento.invitati || []
+    const ids = leadsDaRimuovere.map(l => l.id)
+    const nuovi = invitati.filter(id => !ids.includes(id))
+    const presenze = { ...(evento.presenze || {}) }
+    ids.forEach(id => delete presenze[id])
+    await updateDoc(doc(db, 'eventi', eventoId), { invitati: nuovi, presenze })
+  }
+
   const openEdit = (evento) => {
     setSelected(evento)
-    setForm({ nome: evento.nome, data: evento.data, tipo: evento.tipo, note: evento.note || '' })
+    setForm({
+      nome: evento.nome,
+      dataInizio: evento.dataInizio || evento.data || '',
+      dataFine: evento.dataFine || '',
+      tipo: evento.tipo,
+      note: evento.note || ''
+    })
     setTab('dettagli')
     setView('detail')
   }
 
   const openNew = () => {
     setSelected(null)
-    setForm({ nome: '', data: '', tipo: 'Webinar', note: '' })
+    setForm({ nome: '', dataInizio: '', dataFine: '', tipo: 'Webinar', note: '' })
     setView('new')
   }
 
+  // ── LISTA ──────────────────────────────────────────────────────────────────
   if (view === 'list') return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
@@ -99,28 +150,42 @@ export default function Eventi() {
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
-          {eventi.sort((a, b) => (a.data || '') > (b.data || '') ? -1 : 1).map(e => {
-            const inv = e.invitati?.length || 0
-            const pre = e.presenti?.length || 0
-            const tasso = inv > 0 ? Math.round((pre / inv) * 100) : 0
+          {eventi.sort((a, b) => (a.dataInizio || '') > (b.dataInizio || '') ? -1 : 1).map(e => {
+            const invitati = e.invitati?.length || 0
+            const presenze = e.presenze || {}
+            const presentiAlmeno1 = Object.values(presenze).filter(p => Object.values(p).some(v => v)).length
+            const giorni = e.giorni || []
+            const presentiTutti = giorni.length > 1
+              ? Object.values(presenze).filter(p => giorni.every((_, i) => p[`g${i}`])).length
+              : presentiAlmeno1
+            const tasso = invitati > 0 ? Math.round((presentiAlmeno1 / invitati) * 100) : 0
+
             return (
               <div key={e.id} className="card" style={{ padding: '18px 20px', cursor: 'pointer' }} onClick={() => openEdit(e)}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{e.nome}</div>
                     <div style={{ fontSize: 13, color: 'var(--txt2)' }}>
-                      {e.tipo} · {e.data ? new Date(e.data).toLocaleDateString('it-IT') : 'Data non impostata'}
+                      {e.tipo} · {e.dataInizio ? new Date(e.dataInizio).toLocaleDateString('it-IT') : '—'}
+                      {e.dataFine && e.dataFine !== e.dataInizio ? ` → ${new Date(e.dataFine).toLocaleDateString('it-IT')}` : ''}
+                      {giorni.length > 1 ? ` (${giorni.length} giorni)` : ''}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 20 }}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>{inv}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>{invitati}</div>
                       <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Invitati</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: '#1D9E75' }}>{pre}</div>
-                      <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Presenti</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: '#1D9E75' }}>{presentiAlmeno1}</div>
+                      <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Presenti ≥1gg</div>
                     </div>
+                    {giorni.length > 1 && (
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: '#9B59B6' }}>{presentiTutti}</div>
+                        <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Tutti i gg</div>
+                      </div>
+                    )}
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: 20, fontWeight: 700, color: tasso >= 50 ? '#1D9E75' : '#EF9F27' }}>{tasso}%</div>
                       <div style={{ fontSize: 11, color: 'var(--txt3)' }}>Tasso</div>
@@ -135,6 +200,7 @@ export default function Eventi() {
     </div>
   )
 
+  // ── NUOVO ──────────────────────────────────────────────────────────────────
   if (view === 'new') return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
@@ -149,15 +215,21 @@ export default function Eventi() {
         </div>
         <div className="form-row" style={{ marginBottom: 14 }}>
           <div className="form-group" style={{ margin: 0 }}>
-            <label className="form-label">Data</label>
-            <input type="date" value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))} />
+            <label className="form-label">Data inizio</label>
+            <input type="date" value={form.dataInizio}
+              onChange={e => setForm(f => ({ ...f, dataInizio: e.target.value }))} />
           </div>
           <div className="form-group" style={{ margin: 0 }}>
-            <label className="form-label">Tipo</label>
-            <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
-              {TIPI_EVENTO.map(t => <option key={t}>{t}</option>)}
-            </select>
+            <label className="form-label">Data fine (opzionale)</label>
+            <input type="date" value={form.dataFine}
+              onChange={e => setForm(f => ({ ...f, dataFine: e.target.value }))} />
           </div>
+        </div>
+        <div className="form-group" style={{ marginBottom: 14 }}>
+          <label className="form-label">Tipo</label>
+          <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
+            {TIPI_EVENTO.map(t => <option key={t}>{t}</option>)}
+          </select>
         </div>
         <div className="form-group" style={{ marginBottom: 20 }}>
           <label className="form-label">Note</label>
@@ -171,12 +243,18 @@ export default function Eventi() {
     </div>
   )
 
+  // ── DETTAGLIO ──────────────────────────────────────────────────────────────
   const evento = eventi.find(e => e.id === selected?.id) || selected
   if (!evento) return null
 
   const invitati = evento.invitati || []
-  const presenti = evento.presenti || []
-  const tasso = invitati.length > 0 ? Math.round((presenti.length / invitati.length) * 100) : 0
+  const presenze = evento.presenze || {}
+  const giorni = evento.giorni || (evento.dataInizio ? [evento.dataInizio] : [])
+  const presentiAlmeno1 = Object.values(presenze).filter(p => Object.values(p).some(v => v)).length
+  const presentiTutti = giorni.length > 1
+    ? Object.values(presenze).filter(p => giorni.every((_, i) => p[`g${i}`])).length
+    : presentiAlmeno1
+  const tasso = invitati.length > 0 ? Math.round((presentiAlmeno1 / invitati.length) * 100) : 0
 
   const leadsFiltrati = leads.filter(l => {
     const q = search.toLowerCase()
@@ -229,15 +307,19 @@ export default function Eventi() {
           </div>
           <div className="form-row" style={{ marginBottom: 14 }}>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Data</label>
-              <input type="date" value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))} />
+              <label className="form-label">Data inizio</label>
+              <input type="date" value={form.dataInizio} onChange={e => setForm(f => ({ ...f, dataInizio: e.target.value }))} />
             </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Tipo</label>
-              <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
-                {TIPI_EVENTO.map(t => <option key={t}>{t}</option>)}
-              </select>
+              <label className="form-label">Data fine (opzionale)</label>
+              <input type="date" value={form.dataFine} onChange={e => setForm(f => ({ ...f, dataFine: e.target.value }))} />
             </div>
+          </div>
+          <div className="form-group" style={{ marginBottom: 14 }}>
+            <label className="form-label">Tipo</label>
+            <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
+              {TIPI_EVENTO.map(t => <option key={t}>{t}</option>)}
+            </select>
           </div>
           <div className="form-group">
             <label className="form-label">Note</label>
@@ -263,28 +345,38 @@ export default function Eventi() {
               <option value="">Tutte le priorità</option>
               {['Alta', 'Media', 'Bassa'].map(p => <option key={p}>{p}</option>)}
             </select>
-            <button className="btn-ghost" style={{ fontSize: 13, whiteSpace: 'nowrap' }} onClick={async () => {
-              for (const l of leadsFiltrati) {
-                if (!invitati.includes(l.id)) {
-                  await updateDoc(doc(db, 'eventi', evento.id), { invitati: arrayUnion(l.id) })
-                }
-              }
-            }}>✓ Invita tutti ({leadsFiltrati.length})</button>
+            <button className="btn-ghost" style={{ fontSize: 13, whiteSpace: 'nowrap' }}
+              onClick={() => invitaTutti(evento.id, leadsFiltrati)}>
+              ✓ Invita tutti ({leadsFiltrati.length})
+            </button>
+            <button className="btn-ghost" style={{ fontSize: 13, whiteSpace: 'nowrap', color: 'var(--red)' }}
+              onClick={() => deselezionaTutti(evento.id, leadsFiltrati)}>
+              ✕ Rimuovi tutti
+            </button>
           </div>
 
           <div className="card" style={{ overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-                  {['Lead', 'Funnel', 'Priorità', 'Invitato', 'Presente'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>Lead</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>Funnel</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>Priorità</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>Invitato</th>
+                  {giorni.map((g, i) => (
+                    <th key={i} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                      {giorni.length > 1 ? `Giorno ${i + 1}` : 'Presente'}
+                      <div style={{ fontSize: 10, fontWeight: 400, color: 'var(--txt3)' }}>
+                        {new Date(g).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
+                      </div>
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {leadsFiltrati.map(l => {
                   const isInvitato = invitati.includes(l.id)
-                  const isPresente = presenti.includes(l.id)
+                  const presenzeL = presenze[l.id] || {}
                   return (
                     <tr key={l.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '11px 14px' }}>
@@ -299,11 +391,14 @@ export default function Eventi() {
                         <input type="checkbox" checked={isInvitato}
                           onChange={() => toggleInvitato(evento.id, l.id)} />
                       </td>
-                      <td style={{ padding: '11px 14px' }}>
-                        <input type="checkbox" checked={isPresente}
-                          disabled={!isInvitato}
-                          onChange={() => togglePresente(evento.id, l.id)} />
-                      </td>
+                      {giorni.map((_, i) => (
+                        <td key={i} style={{ padding: '11px 14px', textAlign: 'center' }}>
+                          <input type="checkbox"
+                            checked={!!presenzeL[`g${i}`]}
+                            disabled={!isInvitato}
+                            onChange={() => togglePresenza(evento.id, l.id, i)} />
+                        </td>
+                      ))}
                     </tr>
                   )
                 })}
@@ -316,10 +411,11 @@ export default function Eventi() {
       {tab === 'statistiche' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
           {[
-            { label: 'Invitati',             value: invitati.length,                    color: 'var(--accent)' },
-            { label: 'Presenti',             value: presenti.length,                    color: '#1D9E75' },
-            { label: 'Assenti',              value: invitati.length - presenti.length,  color: '#EF9F27' },
-            { label: 'Tasso partecipazione', value: tasso + '%',                        color: tasso >= 50 ? '#1D9E75' : '#E24B4A' },
+            { label: 'Invitati',           value: invitati.length,                   color: 'var(--accent)' },
+            { label: 'Presenti ≥ 1 giorno', value: presentiAlmeno1,                  color: '#1D9E75' },
+            { label: 'Presenti tutti i gg', value: presentiTutti,                    color: '#9B59B6' },
+            { label: 'Assenti',             value: invitati.length - presentiAlmeno1, color: '#EF9F27' },
+            { label: 'Tasso partecipazione', value: tasso + '%',                     color: tasso >= 50 ? '#1D9E75' : '#E24B4A' },
           ].map(s => (
             <div key={s.label} className="card" style={{ padding: '18px 20px' }}>
               <div style={{ fontSize: 12, color: 'var(--txt2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 8 }}>{s.label}</div>
