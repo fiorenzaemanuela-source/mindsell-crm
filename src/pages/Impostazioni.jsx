@@ -12,7 +12,10 @@ const DEFAULT_CONFIG = {
   ],
   flussi: {},
   priorita: { giorniMedia: 7, giorniBassa: 30 },
+  contenuti: [],
 }
+
+const TIPI_CONTENUTO = ['PDF', 'Immagine', 'Video', 'Link', 'Offerta commerciale']
 
 export default function Impostazioni() {
   const [config, setConfig] = useState(null)
@@ -20,6 +23,7 @@ export default function Impostazioni() {
   const [saving, setSaving] = useState(false)
   const [newFunnel, setNewFunnel] = useState('')
   const [newStato, setNewStato] = useState('')
+  const [newContenuto, setNewContenuto] = useState({ nome: '', tipo: 'PDF', url: '' })
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'config'), snap => {
@@ -42,17 +46,18 @@ export default function Impostazioni() {
   if (!config) return <div style={{ padding: 32, color: 'var(--txt2)' }}>Caricamento...</div>
 
   const TABS = [
-    { id: 'funnel',   label: 'Funnel'   },
-    { id: 'stati',    label: 'Stati'    },
-    { id: 'flussi',   label: 'Flussi'   },
-    { id: 'priorita', label: 'Priorità' },
+    { id: 'funnel',    label: 'Funnel'    },
+    { id: 'stati',     label: 'Stati'     },
+    { id: 'flussi',    label: 'Flussi'    },
+    { id: 'contenuti', label: 'Contenuti' },
+    { id: 'priorita',  label: 'Priorità'  },
   ]
 
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 22, fontWeight: 600 }}>Impostazioni</h1>
-        <p style={{ color: 'var(--txt2)', marginTop: 4, fontSize: 14 }}>Configura funnel, stati e flussi del CRM</p>
+        <p style={{ color: 'var(--txt2)', marginTop: 4, fontSize: 14 }}>Configura funnel, stati, flussi e contenuti del CRM</p>
       </div>
 
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
@@ -139,6 +144,59 @@ export default function Impostazioni() {
         </div>
       )}
 
+      {tab === 'contenuti' && (
+        <div className="card" style={{ padding: 24 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Archivio contenuti</div>
+          <p style={{ fontSize: 13, color: 'var(--txt2)', marginBottom: 16 }}>
+            Aggiungi qui i contenuti che invii ai lead. Li troverai come scelta rapida nella scheda lead.
+          </p>
+
+          {(config.contenuti || []).length === 0 && (
+            <div style={{ fontSize: 13, color: 'var(--txt3)', marginBottom: 16 }}>Nessun contenuto nell'archivio.</div>
+          )}
+
+          {(config.contenuti || []).map((c, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'var(--accentbg)', color: 'var(--accent)', fontWeight: 600, flexShrink: 0 }}>{c.tipo}</span>
+                <span style={{ fontSize: 14, flex: 1 }}>{c.nome}</span>
+                {c.url && (
+                  <a href={c.url} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}
+                    onClick={e => e.stopPropagation()}>
+                    🔗 Apri
+                  </a>
+                )}
+              </div>
+              <button onClick={() => {
+                const updated = { ...config, contenuti: config.contenuti.filter((_, j) => j !== i) }
+                setConfig(updated); save(updated)
+              }} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 13 }}>Elimina</button>
+            </div>
+          ))}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+            <select value={newContenuto.tipo}
+              onChange={e => setNewContenuto(n => ({ ...n, tipo: e.target.value }))}
+              style={{ width: 160 }}>
+              {TIPI_CONTENUTO.map(t => <option key={t}>{t}</option>)}
+            </select>
+            <input placeholder="Nome contenuto..." value={newContenuto.nome}
+              onChange={e => setNewContenuto(n => ({ ...n, nome: e.target.value }))}
+              style={{ flex: 1, minWidth: 180 }} />
+            <input placeholder="URL (opzionale)..." value={newContenuto.url}
+              onChange={e => setNewContenuto(n => ({ ...n, url: e.target.value }))}
+              style={{ flex: 1, minWidth: 180 }} />
+            <button className="btn-primary" onClick={() => {
+              if (!newContenuto.nome.trim()) return
+              const updated = { ...config, contenuti: [...(config.contenuti || []), { ...newContenuto }] }
+              setConfig(updated); save(updated)
+              setNewContenuto({ nome: '', tipo: 'PDF', url: '' })
+            }}>Aggiungi</button>
+          </div>
+        </div>
+      )}
+
       {tab === 'priorita' && (
         <div className="card" style={{ padding: 24 }}>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Regole priorità automatica</div>
@@ -192,7 +250,6 @@ function FlussoEditor({ funnel, config, setConfig, save }) {
       <div style={{ fontSize: 13, color: 'var(--txt2)', marginBottom: 16 }}>
         {flusso.length === 0 ? 'Nessuno stato nel flusso — aggiungine uno qui sotto' : `${flusso.length} stati nel flusso`}
       </div>
-
       {flusso.map((s, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
           <span style={{ fontSize: 12, color: 'var(--txt3)', width: 24, textAlign: 'center', flexShrink: 0 }}>{i + 1}</span>
@@ -205,7 +262,6 @@ function FlussoEditor({ funnel, config, setConfig, save }) {
             style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>✕</button>
         </div>
       ))}
-
       {disponibili.length > 0 && (
         <div style={{ marginTop: 14 }}>
           <div style={{ fontSize: 11, color: 'var(--txt3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>Aggiungi al flusso</div>
