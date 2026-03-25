@@ -237,18 +237,54 @@ export default function Impostazioni() {
 
 function FlussoEditor({ funnel, config, setConfig, save }) {
   const flusso = config.flussi?.[funnel] || []
+  const fonti = config.fontiFunnel?.[funnel] || []
   const disponibili = config.stati.filter(s => !flusso.includes(s))
+  const [nuovaFonte, setNuovaFonte] = useState('')
 
   const update = (nuovoFlusso) => {
     const updated = { ...config, flussi: { ...config.flussi, [funnel]: nuovoFlusso } }
     setConfig(updated); save(updated)
   }
 
+  const addFonte = () => {
+    if (!nuovaFonte.trim()) return
+    const updated = { ...config, fontiFunnel: { ...(config.fontiFunnel || {}), [funnel]: [...fonti, nuovaFonte.trim()] } }
+    setConfig(updated); save(updated); setNuovaFonte('')
+  }
+
+  const removeFonte = (i) => {
+    const updated = { ...config, fontiFunnel: { ...(config.fontiFunnel || {}), [funnel]: fonti.filter((_, j) => j !== i) } }
+    setConfig(updated); save(updated)
+  }
+
   return (
     <div className="card" style={{ padding: 24, marginBottom: 16 }}>
-      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{funnel}</div>
-      <div style={{ fontSize: 13, color: 'var(--txt2)', marginBottom: 16 }}>
-        {flusso.length === 0 ? 'Nessuno stato nel flusso — aggiungine uno qui sotto' : `${flusso.length} stati nel flusso`}
+      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>{funnel}</div>
+
+      {/* Fonti */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 11, color: 'var(--txt3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>Fonti di provenienza</div>
+        {fonti.length === 0 && <div style={{ fontSize: 12, color: 'var(--txt3)', marginBottom: 8 }}>Nessuna fonte — verranno mostrate tutte le fonti globali.</div>}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {fonti.map((f, i) => (
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 6, background: 'var(--accentbg)', color: 'var(--accent)', fontSize: 12 }}>
+              {f}
+              <button onClick={() => removeFonte(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, padding: 0 }}>✕</button>
+            </span>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input placeholder="Nuova fonte..." value={nuovaFonte} onChange={e => setNuovaFonte(e.target.value)}
+            style={{ flex: 1 }}
+            onKeyDown={e => e.key === 'Enter' && addFonte()} />
+          <button className="btn-primary" onClick={addFonte}>Aggiungi</button>
+        </div>
+      </div>
+
+      {/* Stati del flusso */}
+      <div style={{ fontSize: 11, color: 'var(--txt3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>Stati del flusso</div>
+      <div style={{ fontSize: 13, color: 'var(--txt2)', marginBottom: 12 }}>
+        {flusso.length === 0 ? 'Nessuno stato nel flusso' : `${flusso.length} stati`}
       </div>
       {flusso.map((s, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
@@ -267,10 +303,7 @@ function FlussoEditor({ funnel, config, setConfig, save }) {
           <div style={{ fontSize: 11, color: 'var(--txt3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>Aggiungi al flusso</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {disponibili.map(s => (
-              <button key={s} onClick={() => update([...flusso, s])} style={{
-                padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)',
-                borderRadius: 6, background: 'var(--bg)', cursor: 'pointer', color: 'var(--txt2)',
-              }}>{s} +</button>
+              <button key={s} onClick={() => update([...flusso, s])} style={{ padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg)', cursor: 'pointer', color: 'var(--txt2)' }}>{s} +</button>
             ))}
           </div>
         </div>
