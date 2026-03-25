@@ -67,6 +67,8 @@ export default function Leads() {
   const [filterPriorita, setFilterPriorita] = useState('')
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState('anagrafica')
+  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortDir, setSortDir] = useState('desc')
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'leads'), snap => {
@@ -86,17 +88,31 @@ export default function Leads() {
   const STAGE_OPTIONS  = crmConfig?.stati   || DEFAULT_STATI
 
   const q = (search || '').toLowerCase()
-  const filtered = leads.filter(l => {
-    const matchSearch = !q ||
-      (l.nome || '').toLowerCase().includes(q) ||
-      (l.cognome || '').toLowerCase().includes(q) ||
-      (l.email || '').toLowerCase().includes(q) ||
-      (l.telefono || '').includes(q)
-    const matchFunnel   = !filterFunnel   || l.funnel   === filterFunnel
-    const matchStage    = !filterStage    || l.stage    === filterStage
-    const matchPriorita = !filterPriorita || l.priorita === filterPriorita
-    return matchSearch && matchFunnel && matchStage && matchPriorita
-  })
+  const filtered = leads
+    .filter(l => {
+      const matchSearch = !q ||
+        (l.nome || '').toLowerCase().includes(q) ||
+        (l.cognome || '').toLowerCase().includes(q) ||
+        (l.email || '').toLowerCase().includes(q) ||
+        (l.telefono || '').includes(q)
+      const matchFunnel   = !filterFunnel   || l.funnel   === filterFunnel
+      const matchStage    = !filterStage    || l.stage    === filterStage
+      const matchPriorita = !filterPriorita || l.priorita === filterPriorita
+      return matchSearch && matchFunnel && matchStage && matchPriorita
+    })
+    .sort((a, b) => {
+      let va, vb
+      if (sortBy === 'nome')      { va = (a.nome + ' ' + a.cognome).toLowerCase(); vb = (b.nome + ' ' + b.cognome).toLowerCase() }
+      else if (sortBy === 'email')  { va = a.email || ''; vb = b.email || '' }
+      else if (sortBy === 'funnel') { va = a.funnel || ''; vb = b.funnel || '' }
+      else if (sortBy === 'priorita') {
+        const ord = { 'Alta': 0, 'Media': 1, 'Bassa': 2 }
+        va = ord[a.priorita] ?? 3; vb = ord[b.priorita] ?? 3
+        return sortDir === 'asc' ? va - vb : vb - va
+      }
+      else { va = a.createdAt || 0; vb = b.createdAt || 0; return sortDir === 'asc' ? va - vb : vb - va }
+      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+    })
 
   const openNew    = () => { setForm({ ...EMPTY_LEAD }); setSelected(null); setTab('anagrafica'); setView('new') }
   const openDetail = lead => { setForm({ ...EMPTY_LEAD, ...lead }); setSelected(lead); setTab('anagrafica'); setView('detail') }
@@ -276,8 +292,30 @@ export default function Leads() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-                  {['Lead', 'Email', 'Funnel', 'Stato', 'Esito', 'Priorità', 'Fonte', ''].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>{h}</th>
+                  {[
+                    { label: 'Lead',             key: 'nome'      },
+                    { label: 'Email',            key: 'email'     },
+                    { label: 'Funnel',           key: 'funnel'    },
+                    { label: 'Stato',            key: null        },
+                    { label: 'Esito',            key: null        },
+                    { label: 'Priorità',         key: 'priorita'  },
+                    { label: 'Fonte',            key: null        },
+                    { label: 'Data inserimento', key: 'createdAt' },
+                    { label: '',                 key: null        },
+                  ].map(h => (
+                    <th key={h.label} onClick={() => {
+                      if (!h.key) return
+                      if (sortBy === h.key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+                      else { setSortBy(h.key); setSortDir('asc') }
+                    }} style={{
+                      padding: '10px 14px', textAlign: 'left', fontWeight: 600,
+                      color: sortBy === h.key ? 'var(--accent)' : 'var(--txt2)',
+                      fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em',
+                      whiteSpace: 'nowrap', cursor: h.key ? 'pointer' : 'default',
+                      userSelect: 'none',
+                    }}>
+                      {h.label}{sortBy === h.key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -309,6 +347,9 @@ export default function Leads() {
                       {l.priorita && <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`}>{l.priorita}</span>}
                     </td>
                     <td style={{ padding: '11px 14px', color: 'var(--txt2)' }}>{l.fonte || '—'}</td>
+                    <td style={{ padding: '11px 14px', color: 'var(--txt2)', fontSize: 12, whiteSpace: 'nowrap' }}>
+                      {l.createdAt ? new Date(l.createdAt).toLocaleDateString('it-IT') : '—'}
+                    </td>
                     <td style={{ padding: '11px 14px' }}>
                       <button className="btn-sm" onClick={e => { e.stopPropagation(); openDetail(l) }}>Apri</button>
                     </td>
@@ -585,7 +626,6 @@ function AttivitaLead({ leadId }) {
           </div>
         )}
       </div>
-
       <div>
         <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Partecipazione eventi</div>
         {eventi.length === 0 && (
