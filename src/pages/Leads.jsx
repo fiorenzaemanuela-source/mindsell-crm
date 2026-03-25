@@ -78,11 +78,21 @@ export default function Leads() {
   }, [])
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'config'), snap => {
-      if (snap.exists()) setCrmConfig(snap.data())
-    })
-    return () => unsub()
-  }, [])
+  const unsub = onSnapshot(doc(db, 'settings', 'config'), snap => {
+    if (snap.exists()) {
+      const config = snap.data()
+      setCrmConfig(config)
+      setForm(prev => {
+        if (prev.funnel && !prev.fonte) {
+          const fonti = config.fontiFunnel?.[prev.funnel]
+          if (fonti?.length > 0) return { ...prev, fonte: fonti[0] }
+        }
+        return prev
+      })
+    }
+  })
+  return () => unsub()
+}, [])
 
   const FUNNEL_OPTIONS = crmConfig?.funnels || DEFAULT_FUNNEL
   const STAGE_OPTIONS  = crmConfig?.stati   || DEFAULT_STATI
