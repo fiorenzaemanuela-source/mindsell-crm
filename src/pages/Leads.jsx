@@ -368,7 +368,6 @@ export default function Leads() {
     { id: 'funnel',       label: 'Funnel & Stato'    },
     { id: 'questionario', label: 'Questionario'       },
     { id: 'attivita',     label: 'Attività'           },
-    { id: 'materiali',    label: 'Materiali & Offerte'},
     { id: 'note',         label: 'Note & Scoring'    },
   ]
 
@@ -512,56 +511,7 @@ export default function Leads() {
             <AttivitaLead leadId={selected?.id} />
           </div>
         )}
-       {tab === 'materiali' && (
-          <div>
-            <div style={{ marginBottom: 20 }}>
-              <div className="form-label" style={{ marginBottom: 10 }}>Materiali inviati</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                {MATERIALI_OPTIONS.map(m => (
-                  <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: (form.materiali || []).includes(m) ? 'var(--accentbg)' : 'transparent' }}>
-                    <input type="checkbox" checked={(form.materiali || []).includes(m)} onChange={() => toggleArr('materiali', m)} style={{ width: 'auto' }} />
-                    {m}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="form-label" style={{ marginBottom: 10 }}>Offerte presentate</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                {OFFERTE_OPTIONS.map(o => (
-                  <label key={o} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: (form.offerte || []).includes(o) ? 'var(--accentbg)' : 'transparent' }}>
-                    <input type="checkbox" checked={(form.offerte || []).includes(o)} onChange={() => toggleArr('offerte', o)} style={{ width: 'auto' }} />
-                    {o}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        {tab === 'note' && (
-          <div>
-            <div className="form-row" style={{ marginBottom: 14 }}>
-              <F label="Priorità" half>
-                <select value={form.priorita} onChange={e => setForm(f => ({ ...f, priorita: e.target.value }))}>
-                  {PRIORITA.map(p => <option key={p}>{p}</option>)}
-                </select>
-              </F>
-              <F label="Valore potenziale (€)" half>
-                <input type="number" placeholder="es. 2500" value={form.valoreStimato} onChange={e => setForm(f => ({ ...f, valoreStimato: e.target.value }))} />
-              </F>
-            </div>
-            <F label="Note">
-              <textarea style={{ minHeight: 160 }}
-                placeholder="Note libere sul lead, contesto, osservazioni del setter..."
-                value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
-            </F>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-function AttivitaLead({ leadId }) {
+       function AttivitaLead({ leadId }) {
   const [eventi, setEventi] = useState([])
   const [contenuti, setContenuti] = useState([])
   const [archivio, setArchivio] = useState([])
