@@ -4,12 +4,14 @@ import Dashboard from './pages/Dashboard.jsx'
 import EmailCampagna from './pages/EmailCampagna.jsx'
 import Leads from './pages/Leads.jsx'
 import Impostazioni from './pages/Impostazioni.jsx'
+import Eventi from './pages/Eventi.jsx'
 
 const NAV = [
   { to: '/',             icon: '◈', label: 'Dashboard'      },
   { to: '/leads',        icon: '◉', label: 'Lead'           },
   { to: '/agenda',       icon: '◷', label: 'Agenda Setter'  },
   { to: '/email',        icon: '✉', label: 'Campagne Email' },
+  { to: '/eventi', icon: '◑', label: 'Eventi' },
   { to: '/impostazioni', icon: '⚙', label: 'Impostazioni'   },
 ]
 
@@ -23,6 +25,7 @@ export default function App() {
           <Route path="/leads"        element={<Leads />}         />
           <Route path="/agenda"       element={<AgendaSetter />}  />
           <Route path="/email"        element={<EmailCampagna />} />
+          <Route path="/eventi" element={<Eventi />} />
           <Route path="/impostazioni" element={<Impostazioni />}  />
         </Routes>
       </main>
