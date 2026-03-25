@@ -593,6 +593,7 @@ export default function Leads() {
               )}
             </div>
           </div>
+          <PresenzaEventiLead leadId={selected?.id} />
 
          <div className="card" style={{ padding: 16 }}>
   <div style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: haQuestionario ? 'pointer' : 'default' }}
@@ -763,6 +764,58 @@ function AttivitaLead({ leadId }) {
           {saving ? '...' : '+'}
         </button>
       </div>
+    </div>
+  )
+}
+function PresenzaEventiLead({ leadId }) {
+  const [eventi, setEventi] = useState([])
+
+  useEffect(() => {
+    if (!leadId) return
+    const unsub = onSnapshot(collection(db, 'eventi'), snap => {
+      setEventi(snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(e => (e.invitati || []).includes(leadId)))
+    })
+    return () => unsub()
+  }, [leadId])
+
+  if (eventi.length === 0) return null
+
+  return (
+    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 8 }}>Presenze eventi</div>
+      {eventi.map(e => {
+        const presenze = e.presenze?.[leadId] || {}
+        const giorni = e.giorni || []
+        const haPresenza = Object.values(presenze).some(v => v)
+        const tuttiPresenti = giorni.length > 0 && giorni.every((_, i) => presenze[`g${i}`])
+        const giorniPresenti = giorni.filter((_, i) => presenze[`g${i}`]).length
+
+        return (
+          <div key={e.id} style={{ marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 500 }}>{e.nome}</span>
+              <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                background: tuttiPresenti ? '#EAF3DE' : haPresenza ? '#FAEEDA' : '#F1EFE8',
+                color: tuttiPresenti ? '#3B6D11' : haPresenza ? '#854F0B' : '#5F5E5A' }}>
+                {tuttiPresenti ? 'Tutti i giorni' : haPresenza ? `${giorniPresenti}/${giorni.length} gg` : 'Assente'}
+              </span>
+            </div>
+            {giorni.length > 1 && (
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {giorni.map((g, i) => (
+                  <span key={i} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                    background: presenze[`g${i}`] ? '#1D9E75' : 'var(--bg)',
+                    color: presenze[`g${i}`] ? '#fff' : 'var(--txt3)',
+                    border: '1px solid var(--border)' }}>
+                    {new Date(g).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
