@@ -115,8 +115,14 @@ export default function Leads() {
     })
 
   const openNew    = () => { setForm({ ...EMPTY_LEAD }); setSelected(null); setView('new') }
-  const openDetail = lead => { setForm({ ...EMPTY_LEAD, ...lead }); setSelected(lead); setShowQuestionario(false); setView('detail') }
-
+ const openDetail = lead => {
+  const fonti = crmConfig?.fontiFunnel?.[lead.funnel]
+  const fonte = lead.fonte || (fonti?.length === 1 ? fonti[0] : '')
+  setForm({ ...EMPTY_LEAD, ...lead, fonte })
+  setSelected(lead)
+  setShowQuestionario(false)
+  setView('detail')
+}
   const saveNew = async () => {
     if (!form.nome.trim()) return alert('Inserisci almeno il nome.')
     setSaving(true)
