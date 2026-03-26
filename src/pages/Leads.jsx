@@ -1084,6 +1084,9 @@ function PresenzaEventiLead({ leadId }) {
           <div key={e.id} style={{ marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontSize: 12, fontWeight: 500 }}>{e.nome}</span>
+<span style={{ fontSize: 11, color: 'var(--txt3)' }}>
+  {e.dataInizio ? new Date(e.dataInizio).toLocaleDateString('it-IT') : '—'}
+</span>
               <span
                 style={{
                   fontSize: 10,
