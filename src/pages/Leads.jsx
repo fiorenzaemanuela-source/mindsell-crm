@@ -1117,3 +1117,4 @@ function PresenzaEventiLead({ leadId }) {
     </table>
   </div>
 )
+}
