@@ -593,7 +593,7 @@ export default function Leads() {
               )}
             </div>
           </div>
-          <PresenzaEventiLead leadId={selected?.id} />
+          <PresenzaEventiLead key={selected?.id} leadId={selected?.id} />
 
          <div className="card" style={{ padding: 16 }}>
   <div style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: haQuestionario ? 'pointer' : 'default' }}
@@ -628,7 +628,7 @@ export default function Leads() {
         {/* Attività */}
         <div className="card" style={{ padding: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 12 }}>Attività</div>
-          <AttivitaLead leadId={selected?.id} />
+          <AttivitaLead key={selected?.id} leadId={selected?.id} />
         </div>
 
         {/* Flow email */}
