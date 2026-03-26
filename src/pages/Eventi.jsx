@@ -409,19 +409,141 @@ export default function Eventi() {
       )}
 
       {tab === 'statistiche' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
-          {[
-            { label: 'Invitati',           value: invitati.length,                   color: 'var(--accent)' },
-            { label: 'Presenti ≥ 1 giorno', value: presentiAlmeno1,                  color: '#1D9E75' },
-            { label: 'Presenti tutti i gg', value: presentiTutti,                    color: '#9B59B6' },
-            { label: 'Assenti',             value: invitati.length - presentiAlmeno1, color: '#EF9F27' },
-            { label: 'Tasso partecipazione', value: tasso + '%',                     color: tasso >= 50 ? '#1D9E75' : '#E24B4A' },
-          ].map(s => (
-            <div key={s.label} className="card" style={{ padding: '18px 20px' }}>
-              <div style={{ fontSize: 12, color: 'var(--txt2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 8 }}>{s.label}</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.value}</div>
+  <StatisticheEvento
+    evento={evento}
+    invitati={invitati}
+    presenze={presenze}
+    giorni={giorni}
+    presentiAlmeno1={presentiAlmeno1}
+    presentiTutti={presentiTutti}
+    tasso={tasso}
+    leads={leads}
+  />
+)}
+    </div>
+  )
+}
+function StatisticheEvento({ evento, invitati, presenze, giorni, presentiAlmeno1, presentiTutti, tasso, leads }) {
+  const [categoria, setCategoria] = useState(null)
+  const [selezionati, setSelezionati] = useState([])
+  const [archivio, setArchivio] = useState([])
+  const [contenutoScelto, setContenutoscelto] = useState('')
+  const [dataInvio, setDataInvio] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'config'), snap => {
+      if (snap.exists()) setArchivio(snap.data().contenuti || [])
+    })
+    return () => unsub()
+  }, [])
+
+  const leadIds = {
+    invitati: invitati,
+    presenti1: Object.keys(presenze).filter(id => Object.values(presenze[id] || {}).some(v => v)),
+    presentiTutti: Object.keys(presenze).filter(id => giorni.every((_, i) => presenze[id]?.[`g${i}`])),
+    assenti: invitati.filter(id => !Object.values(presenze[id] || {}).some(v => v)),
+  }
+
+  const leadsDiCategoria = categoria
+    ? leads.filter(l => leadIds[categoria]?.includes(l.id))
+    : []
+
+  const toggleSel = id => setSelezionati(prev =>
+    prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+  )
+
+  const selTutti = () => {
+    if (selezionati.length === leadsDiCategoria.length) setSelezionati([])
+    else setSelezionati(leadsDiCategoria.map(l => l.id))
+  }
+
+  const inviaContenuto = async () => {
+    if (!contenutoScelto) return alert('Seleziona un contenuto.')
+    if (selezionati.length === 0) return alert('Seleziona almeno un lead.')
+    setSaving(true)
+    const c = archivio.find(c => c.nome === contenutoScelto)
+    const data = dataInvio || new Date().toISOString().split('T')[0]
+    for (const leadId of selezionati) {
+      await addDoc(collection(db, 'leads', leadId, 'contenuti'), {
+        ...c, data, createdAt: Date.now(),
+      })
+    }
+    setSaving(false)
+    setSelezionati([])
+    setContenutoscelto('')
+    alert(`✅ Contenuto inviato a ${selezionati.length} lead`)
+  }
+
+  const cards = [
+    { id: 'invitati',      label: 'Invitati',            value: invitati.length,                    color: 'var(--accent)' },
+    { id: 'presenti1',     label: 'Presenti ≥ 1 giorno', value: presentiAlmeno1,                    color: '#1D9E75' },
+    { id: 'presentiTutti', label: 'Presenti tutti i gg', value: presentiTutti,                      color: '#9B59B6' },
+    { id: 'assenti',       label: 'Assenti',              value: invitati.length - presentiAlmeno1,  color: '#EF9F27' },
+    { id: null,            label: 'Tasso partecipazione', value: tasso + '%',                        color: tasso >= 50 ? '#1D9E75' : '#E24B4A' },
+  ]
+
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
+        {cards.map(s => (
+          <div key={s.label} className="card" style={{
+            padding: '18px 20px', cursor: s.id ? 'pointer' : 'default',
+            border: categoria === s.id && s.id ? '2px solid var(--accent)' : undefined,
+          }} onClick={() => s.id && setCategoria(categoria === s.id ? null : s.id)}>
+            <div style={{ fontSize: 12, color: 'var(--txt2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 8 }}>{s.label}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.value}</div>
+            {s.id && <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 6 }}>{categoria === s.id ? '▲ chiudi' : '▼ vedi lista'}</div>}
+          </div>
+        ))}
+      </div>
+
+      {categoria && leadsDiCategoria.length > 0 && (
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>
+              {cards.find(c => c.id === categoria)?.label} — {leadsDiCategoria.length} lead
             </div>
-          ))}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <select value={contenutoScelto} onChange={e => setContenutoscelto(e.target.value)} style={{ fontSize: 12, minWidth: 200 }}>
+                <option value="">Seleziona contenuto...</option>
+                {archivio.map((c, i) => <option key={i} value={c.nome}>{c.tipo} — {c.nome}</option>)}
+              </select>
+              <input type="date" value={dataInvio} onChange={e => setDataInvio(e.target.value)} style={{ fontSize: 12, width: 140 }} />
+              <button className="btn-primary" onClick={inviaContenuto} disabled={saving || selezionati.length === 0} style={{ fontSize: 12 }}>
+                {saving ? '...' : `→ Invia a ${selezionati.length} lead`}
+              </button>
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+                <th style={{ padding: '8px 12px', width: 32 }}>
+                  <input type="checkbox" checked={selezionati.length === leadsDiCategoria.length && leadsDiCategoria.length > 0}
+                    onChange={selTutti} />
+                </th>
+                {['Lead', 'Email', 'Funnel', 'Priorità'].map(h => (
+                  <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {leadsDiCategoria.map(l => (
+                <tr key={l.id} style={{ borderBottom: '1px solid var(--border)', background: selezionati.includes(l.id) ? 'var(--accentbg)' : '' }}>
+                  <td style={{ padding: '8px 12px' }}>
+                    <input type="checkbox" checked={selezionati.includes(l.id)} onChange={() => toggleSel(l.id)} />
+                  </td>
+                  <td style={{ padding: '8px 12px', fontWeight: 500 }}>{l.nome} {l.cognome}</td>
+                  <td style={{ padding: '8px 12px', color: 'var(--txt2)', fontSize: 12 }}>{l.email || '—'}</td>
+                  <td style={{ padding: '8px 12px', color: 'var(--txt2)', fontSize: 12 }}>{l.funnel || '—'}</td>
+                  <td style={{ padding: '8px 12px' }}>
+                    {l.priorita && <span className={`badge ${l.priorita === 'Alta' ? 'badge-red' : l.priorita === 'Media' ? 'badge-amber' : 'badge-gray'}`}>{l.priorita}</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
