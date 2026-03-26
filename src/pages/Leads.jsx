@@ -1067,61 +1067,53 @@ function PresenzaEventiLead({ leadId }) {
 
   if (eventi.length === 0) return null
 
-  return (
-    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 8 }}>
-        Presenze eventi
-      </div>
-
-      {eventi.map(e => {
-        const presenze = e.presenze?.[leadId] || {}
-        const giorni = e.giorni || []
-        const haPresenza = Object.values(presenze).some(v => v)
-        const tuttiPresenti = giorni.length > 0 && giorni.every((_, i) => presenze[`g${i}`])
-        const giorniPresenti = giorni.filter((_, i) => presenze[`g${i}`]).length
-
-        return (
-          <div key={e.id} style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 12, fontWeight: 500 }}>{e.nome}</span>
-<span style={{ fontSize: 11, color: 'var(--txt3)' }}>
-  {e.dataInizio ? new Date(e.dataInizio).toLocaleDateString('it-IT') : '—'}
-</span>
-              <span
-                style={{
-                  fontSize: 10,
-                  padding: '1px 6px',
-                  borderRadius: 3,
-                  background: tuttiPresenti ? '#EAF3DE' : haPresenza ? '#FAEEDA' : '#F1EFE8',
-                  color: tuttiPresenti ? '#3B6D11' : haPresenza ? '#854F0B' : '#5F5E5A',
-                }}
-              >
-                {tuttiPresenti ? 'Tutti i giorni' : haPresenza ? `${giorniPresenti}/${giorni.length} gg` : 'Assente'}
-              </span>
-            </div>
-
-            {giorni.length > 1 && (
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                {giorni.map((g, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      fontSize: 10,
-                      padding: '1px 6px',
-                      borderRadius: 3,
-                      background: presenze[`g${i}`] ? '#1D9E75' : 'var(--bg)',
-                      color: presenze[`g${i}`] ? '#fff' : 'var(--txt3)',
-                      border: '1px solid var(--border)',
-                    }}
-                  >
-                    {new Date(g).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        )
-      })}
+ return (
+  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 8 }}>
+      Presenze eventi
     </div>
-  )
-}
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+      <thead>
+        <tr style={{ borderBottom: '1px solid var(--border)' }}>
+          <th style={{ padding: '4px 8px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--txt3)', textTransform: 'uppercase' }}>Evento</th>
+          <th style={{ padding: '4px 8px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--txt3)', textTransform: 'uppercase' }}>Data</th>
+          <th style={{ padding: '4px 8px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--txt3)', textTransform: 'uppercase' }}>Giorni</th>
+          <th style={{ padding: '4px 8px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--txt3)', textTransform: 'uppercase' }}>Stato</th>
+        </tr>
+      </thead>
+      <tbody>
+        {eventi.map(e => {
+          const presenze = e.presenze?.[leadId] || {}
+          const giorni = e.giorni || []
+          const haPresenza = Object.values(presenze).some(v => v)
+          const tuttiPresenti = giorni.length > 0 && giorni.every((_, i) => presenze[`g${i}`])
+          const giorniPresenti = giorni.filter((_, i) => presenze[`g${i}`]).length
+          return (
+            <tr key={e.id} style={{ borderBottom: '1px solid var(--border)' }}>
+              <td style={{ padding: '6px 8px', fontWeight: 500 }}>{e.nome}</td>
+              <td style={{ padding: '6px 8px', color: 'var(--txt2)' }}>
+                {e.dataInizio ? new Date(e.dataInizio).toLocaleDateString('it-IT') : '—'}
+              </td>
+              <td style={{ padding: '6px 8px' }}>
+                {giorni.length > 1 && (
+                  <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                    {giorni.map((g, i) => (
+                      <span key={i} style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: presenze[`g${i}`] ? '#1D9E75' : 'var(--bg)', color: presenze[`g${i}`] ? '#fff' : 'var(--txt3)', border: '1px solid var(--border)' }}>
+                        {new Date(g).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </td>
+              <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, background: tuttiPresenti ? '#EAF3DE' : haPresenza ? '#FAEEDA' : '#F1EFE8', color: tuttiPresenti ? '#3B6D11' : haPresenza ? '#854F0B' : '#5F5E5A' }}>
+                  {tuttiPresenti ? 'Tutti i gg' : haPresenza ? `${giorniPresenti}/${giorni.length} gg` : 'Assente'}
+                </span>
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  </div>
+)
