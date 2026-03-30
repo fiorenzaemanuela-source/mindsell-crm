@@ -15,8 +15,14 @@ export function AuthProvider({ children }) {
       if (firebaseUser) {
         setUser(firebaseUser)
         const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
-        if (snap.exists()) setProfile(snap.data())
-        else setProfile({ ruolo: 'setter', nome: firebaseUser.email })
+        if (snap.exists()) {
+  const data = snap.data()
+  console.log('Profile caricato:', data)
+  setProfile(data)
+} else {
+  console.log('Documento utente non trovato, uso setter di default')
+  setProfile({ ruolo: 'setter', nome: firebaseUser.email })
+}
       } else {
         setUser(null)
         setProfile(null)
