@@ -12,9 +12,10 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async firebaseUser => {
-      if (firebaseUser) {
-        setUser(firebaseUser)
-        const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
+     if (firebaseUser) {
+  setUser(firebaseUser)
+  console.log('UID utente loggato:', firebaseUser.uid)
+  const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
         if (snap.exists()) {
   const data = snap.data()
   console.log('Profile caricato:', data)
