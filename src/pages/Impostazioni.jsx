@@ -53,12 +53,13 @@ export default function Impostazioni() {
   if (!config) return <div style={{ padding: 32, color: 'var(--txt2)' }}>Caricamento...</div>
 
   const TABS = [
-    { id: 'funnel',    label: 'Funnel'    },
-    { id: 'stati',     label: 'Stati'     },
-    { id: 'flussi',    label: 'Flussi'    },
-    { id: 'contenuti', label: 'Contenuti' },
-    { id: 'priorita',  label: 'Priorità'  },
-    { id: 'utenti',    label: 'Utenti'    },
+    { id: 'funnel',      label: 'Funnel'       },
+    { id: 'stati',       label: 'Stati'        },
+    { id: 'flussi',      label: 'Flussi'       },
+    { id: 'contenuti',   label: 'Contenuti'    },
+    { id: 'priorita',    label: 'Priorità'     },
+    { id: 'utenti',      label: 'Utenti'       },
+    { id: 'roundrobin',  label: 'Round Robin'  },
   ]
 
   return (
@@ -68,7 +69,7 @@ export default function Impostazioni() {
         <p style={{ color: 'var(--txt2)', marginTop: 4, fontSize: 14 }}>Configura funnel, stati, flussi e contenuti del CRM</p>
       </div>
 
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24, flexWrap: 'wrap' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             padding: '8px 18px', border: 'none', background: 'none', fontSize: 14, cursor: 'pointer',
@@ -169,9 +170,7 @@ export default function Impostazioni() {
                 {c.url && (
                   <a href={c.url} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}
-                    onClick={e => e.stopPropagation()}>
-                    🔗 Apri
-                  </a>
+                    onClick={e => e.stopPropagation()}>🔗 Apri</a>
                 )}
               </div>
               <button onClick={() => {
@@ -181,17 +180,13 @@ export default function Impostazioni() {
             </div>
           ))}
           <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-            <select value={newContenuto.tipo}
-              onChange={e => setNewContenuto(n => ({ ...n, tipo: e.target.value }))}
-              style={{ width: 160 }}>
+            <select value={newContenuto.tipo} onChange={e => setNewContenuto(n => ({ ...n, tipo: e.target.value }))} style={{ width: 160 }}>
               {TIPI_CONTENUTO.map(t => <option key={t}>{t}</option>)}
             </select>
             <input placeholder="Nome contenuto..." value={newContenuto.nome}
-              onChange={e => setNewContenuto(n => ({ ...n, nome: e.target.value }))}
-              style={{ flex: 1, minWidth: 180 }} />
+              onChange={e => setNewContenuto(n => ({ ...n, nome: e.target.value }))} style={{ flex: 1, minWidth: 180 }} />
             <input placeholder="URL (opzionale)..." value={newContenuto.url}
-              onChange={e => setNewContenuto(n => ({ ...n, url: e.target.value }))}
-              style={{ flex: 1, minWidth: 180 }} />
+              onChange={e => setNewContenuto(n => ({ ...n, url: e.target.value }))} style={{ flex: 1, minWidth: 180 }} />
             <button className="btn-primary" onClick={() => {
               if (!newContenuto.nome.trim()) return
               const updated = { ...config, contenuti: [...(config.contenuti || []), { ...newContenuto }] }
@@ -235,9 +230,164 @@ export default function Impostazioni() {
 
       {tab === 'utenti' && <GestioneUtenti />}
 
+      {tab === 'roundrobin' && <RoundRobin config={config} setConfig={setConfig} save={save} />}
+
       {saving && (
         <div style={{ marginTop: 16, fontSize: 13, color: 'var(--txt2)' }}>💾 Salvataggio in corso...</div>
       )}
+    </div>
+  )
+}
+
+function RoundRobin({ config, setConfig, save }) {
+  const [utenti, setUtenti] = useState([])
+  const [nuovaRegola, setNuovaRegola] = useState({ funnel: '', stato: '', setters: [] })
+  const [showForm, setShowForm] = useState(false)
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'users'), snap => {
+      setUtenti(snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(u => u.ruolo === 'setter' && u.attivo !== false))
+    })
+    return () => unsub()
+  }, [])
+
+  const regole = config.roundRobin || []
+
+  const aggiungiRegola = () => {
+    if (!nuovaRegola.funnel) return alert('Seleziona almeno un funnel.')
+    if (nuovaRegola.setters.length === 0) return alert('Seleziona almeno un setter.')
+    const updated = {
+      ...config,
+      roundRobin: [...regole, { ...nuovaRegola, attivo: true, ultimoIndex: 0, id: Date.now().toString() }]
+    }
+    setConfig(updated); save(updated)
+    setNuovaRegola({ funnel: '', stato: '', setters: [] })
+    setShowForm(false)
+  }
+
+  const eliminaRegola = (id) => {
+    const updated = { ...config, roundRobin: regole.filter(r => r.id !== id) }
+    setConfig(updated); save(updated)
+  }
+
+  const toggleRegolaAttiva = (id) => {
+    const updated = {
+      ...config,
+      roundRobin: regole.map(r => r.id === id ? { ...r, attivo: !r.attivo } : r)
+    }
+    setConfig(updated); save(updated)
+  }
+
+  const toggleSetter = (uid) => {
+    setNuovaRegola(prev => ({
+      ...prev,
+      setters: prev.setters.includes(uid)
+        ? prev.setters.filter(id => id !== uid)
+        : [...prev.setters, uid]
+    }))
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>Round Robin</div>
+          <div style={{ fontSize: 13, color: 'var(--txt2)', marginTop: 2 }}>
+            Distribuisce i lead automaticamente tra i setter in rotazione
+          </div>
+        </div>
+        <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
+          {showForm ? '✕ Annulla' : '+ Nuova regola'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Nuova regola di assegnazione</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 4 }}>Funnel *</div>
+              <select value={nuovaRegola.funnel} onChange={e => setNuovaRegola(r => ({ ...r, funnel: e.target.value }))} style={{ width: '100%' }}>
+                <option value="">Seleziona funnel...</option>
+                {config.funnels.map(f => <option key={f}>{f}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 4 }}>Stato (opzionale)</div>
+              <select value={nuovaRegola.stato} onChange={e => setNuovaRegola(r => ({ ...r, stato: e.target.value }))} style={{ width: '100%' }}>
+                <option value="">Tutti gli stati</option>
+                {config.stati.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 8 }}>Setter in rotazione *</div>
+            {utenti.length === 0 && (
+              <div style={{ fontSize: 13, color: 'var(--txt3)' }}>Nessun setter attivo. Crea prima un setter dal tab Utenti.</div>
+            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {utenti.map(u => (
+                <label key={u.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                  borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer',
+                  background: nuovaRegola.setters.includes(u.id) ? 'var(--accentbg)' : 'transparent',
+                  fontSize: 13
+                }}>
+                  <input type="checkbox" checked={nuovaRegola.setters.includes(u.id)}
+                    onChange={() => toggleSetter(u.id)} style={{ width: 'auto' }} />
+                  {u.nome}
+                </label>
+              ))}
+            </div>
+          </div>
+          <button className="btn-primary" onClick={aggiungiRegola}>Crea regola</button>
+        </div>
+      )}
+
+      {regole.length === 0 && !showForm && (
+        <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--txt3)' }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>↻</div>
+          <div style={{ fontSize: 14 }}>Nessuna regola Round Robin configurata.</div>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gap: 12 }}>
+        {regole.map(r => {
+          const setterNomi = r.setters.map(id => utenti.find(u => u.id === id)?.nome || id)
+          return (
+            <div key={r.id} className="card" style={{ padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{r.funnel}</span>
+                    {r.stato && <span style={{ fontSize: 12, color: 'var(--txt2)' }}>→ {r.stato}</span>}
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4,
+                      background: r.attivo ? '#EAF3DE' : '#F1EFE8',
+                      color: r.attivo ? '#3B6D11' : '#5F5E5A' }}>
+                      {r.attivo ? 'Attivo' : 'Inattivo'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--txt2)' }}>
+                    Setter in rotazione: <strong>{setterNomi.join(' → ')}</strong>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 4 }}>
+                    Prossimo turno: {utenti.find(u => u.id === r.setters[r.ultimoIndex % r.setters.length])?.nome || '—'}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => toggleRegolaAttiva(r.id)} className="btn-ghost" style={{ fontSize: 12 }}>
+                    {r.attivo ? 'Disattiva' : 'Attiva'}
+                  </button>
+                  <button onClick={() => eliminaRegola(r.id)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 13 }}>
+                    Elimina
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
