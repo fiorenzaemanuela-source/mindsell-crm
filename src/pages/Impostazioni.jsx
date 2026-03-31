@@ -266,7 +266,7 @@ function GestioneUtenti() {
     setSaving(true)
     setError('')
     try {
-      const cred = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password)
+      const cred = await createUserWithEmailAndPassword(secondaryAuth, newUser.email, newUser.password)
       await setDoc(doc(db, 'users', cred.user.uid), {
         nome: newUser.nome.trim(),
         email: newUser.email.trim(),
