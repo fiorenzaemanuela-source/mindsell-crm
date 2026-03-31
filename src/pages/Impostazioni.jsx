@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { db } from '../firebase'
-import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { db, auth } from '../firebase'
+import { doc, onSnapshot, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
 
 const DEFAULT_CONFIG = {
   funnels: ['Webinar_MindSell_2025', 'Traffico questionario', 'Webinar_Potere_Parole_2026'],
@@ -16,6 +17,7 @@ const DEFAULT_CONFIG = {
 }
 
 const TIPI_CONTENUTO = ['PDF', 'Immagine', 'Video', 'Link', 'Offerta commerciale']
+const RUOLI = ['admin', 'setter', 'closer', 'viewer']
 
 export default function Impostazioni() {
   const [config, setConfig] = useState(null)
@@ -51,6 +53,7 @@ export default function Impostazioni() {
     { id: 'flussi',    label: 'Flussi'    },
     { id: 'contenuti', label: 'Contenuti' },
     { id: 'priorita',  label: 'Priorità'  },
+    { id: 'utenti',    label: 'Utenti'    },
   ]
 
   return (
@@ -150,11 +153,9 @@ export default function Impostazioni() {
           <p style={{ fontSize: 13, color: 'var(--txt2)', marginBottom: 16 }}>
             Aggiungi qui i contenuti che invii ai lead. Li troverai come scelta rapida nella scheda lead.
           </p>
-
           {(config.contenuti || []).length === 0 && (
             <div style={{ fontSize: 13, color: 'var(--txt3)', marginBottom: 16 }}>Nessun contenuto nell'archivio.</div>
           )}
-
           {(config.contenuti || []).map((c, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
@@ -174,7 +175,6 @@ export default function Impostazioni() {
               }} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 13 }}>Elimina</button>
             </div>
           ))}
-
           <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
             <select value={newContenuto.tipo}
               onChange={e => setNewContenuto(n => ({ ...n, tipo: e.target.value }))}
@@ -228,9 +228,157 @@ export default function Impostazioni() {
         </div>
       )}
 
+      {tab === 'utenti' && <GestioneUtenti />}
+
       {saving && (
         <div style={{ marginTop: 16, fontSize: 13, color: 'var(--txt2)' }}>💾 Salvataggio in corso...</div>
       )}
+    </div>
+  )
+}
+
+function GestioneUtenti() {
+  const [utenti, setUtenti] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [newUser, setNewUser] = useState({ nome: '', email: '', password: '', ruolo: 'setter' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'users'), snap => {
+      setUtenti(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setLoading(false)
+    })
+    return () => unsub()
+  }, [])
+
+  const creaUtente = async () => {
+    if (!newUser.nome.trim() || !newUser.email.trim() || !newUser.password.trim()) {
+      return setError('Compila tutti i campi.')
+    }
+    setSaving(true)
+    setError('')
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password)
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        nome: newUser.nome.trim(),
+        email: newUser.email.trim(),
+        ruolo: newUser.ruolo,
+        attivo: true,
+        createdAt: Date.now(),
+      })
+      setNewUser({ nome: '', email: '', password: '', ruolo: 'setter' })
+      setShowForm(false)
+    } catch (err) {
+      if (err.code === 'auth/email-already-in-use') setError('Email già in uso.')
+      else if (err.code === 'auth/weak-password') setError('Password troppo corta (min 6 caratteri).')
+      else setError('Errore: ' + err.message)
+    }
+    setSaving(false)
+  }
+
+  const cambiaRuolo = async (uid, ruolo) => {
+    await updateDoc(doc(db, 'users', uid), { ruolo })
+  }
+
+  const toggleAttivo = async (uid, attivo) => {
+    await updateDoc(doc(db, 'users', uid), { attivo: !attivo })
+  }
+
+  const coloreRuolo = r => ({
+    admin:  { bg: '#E6F1FB', color: '#185FA5' },
+    setter: { bg: '#EAF3DE', color: '#3B6D11' },
+    closer: { bg: '#FAEEDA', color: '#854F0B' },
+    viewer: { bg: '#F1EFE8', color: '#5F5E5A' },
+  }[r] || { bg: '#F1EFE8', color: '#5F5E5A' })
+
+  if (loading) return <div style={{ fontSize: 13, color: 'var(--txt2)' }}>Caricamento utenti...</div>
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>Gestione utenti</div>
+          <div style={{ fontSize: 13, color: 'var(--txt2)', marginTop: 2 }}>{utenti.length} utenti totali</div>
+        </div>
+        <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
+          {showForm ? '✕ Annulla' : '+ Nuovo utente'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Crea nuovo utente</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 4 }}>Nome *</div>
+              <input placeholder="Mario Rossi" value={newUser.nome}
+                onChange={e => setNewUser(u => ({ ...u, nome: e.target.value }))} style={{ width: '100%' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 4 }}>Email *</div>
+              <input type="email" placeholder="mario@mindsell.it" value={newUser.email}
+                onChange={e => setNewUser(u => ({ ...u, email: e.target.value }))} style={{ width: '100%' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 4 }}>Password *</div>
+              <input type="password" placeholder="min 6 caratteri" value={newUser.password}
+                onChange={e => setNewUser(u => ({ ...u, password: e.target.value }))} style={{ width: '100%' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--txt2)', marginBottom: 4 }}>Ruolo *</div>
+              <select value={newUser.ruolo} onChange={e => setNewUser(u => ({ ...u, ruolo: e.target.value }))} style={{ width: '100%' }}>
+                {RUOLI.map(r => <option key={r}>{r}</option>)}
+              </select>
+            </div>
+          </div>
+          {error && <div style={{ fontSize: 13, color: 'var(--red)', marginBottom: 12 }}>{error}</div>}
+          <button className="btn-primary" onClick={creaUtente} disabled={saving}>
+            {saving ? 'Creazione...' : 'Crea utente'}
+          </button>
+        </div>
+      )}
+
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+              {['Nome', 'Email', 'Ruolo', 'Stato', ''].map(h => (
+                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--txt2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {utenti.map(u => {
+              const badge = coloreRuolo(u.ruolo)
+              return (
+                <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '11px 14px', fontWeight: 500 }}>{u.nome || '—'}</td>
+                  <td style={{ padding: '11px 14px', color: 'var(--txt2)' }}>{u.email}</td>
+                  <td style={{ padding: '11px 14px' }}>
+                    <select value={u.ruolo} onChange={e => cambiaRuolo(u.id, e.target.value)}
+                      style={{ fontSize: 12, padding: '3px 8px', borderRadius: 4, background: badge.bg, color: badge.color, border: 'none', fontWeight: 600, cursor: 'pointer' }}>
+                      {RUOLI.map(r => <option key={r}>{r}</option>)}
+                    </select>
+                  </td>
+                  <td style={{ padding: '11px 14px' }}>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: u.attivo !== false ? '#EAF3DE' : '#F1EFE8', color: u.attivo !== false ? '#3B6D11' : '#5F5E5A' }}>
+                      {u.attivo !== false ? 'Attivo' : 'Disabilitato'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '11px 14px' }}>
+                    <button onClick={() => toggleAttivo(u.id, u.attivo !== false)}
+                      style={{ background: 'none', border: 'none', fontSize: 12, color: 'var(--txt2)', cursor: 'pointer' }}>
+                      {u.attivo !== false ? 'Disabilita' : 'Abilita'}
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -260,8 +408,6 @@ function FlussoEditor({ funnel, config, setConfig, save }) {
   return (
     <div className="card" style={{ padding: 24, marginBottom: 16 }}>
       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>{funnel}</div>
-
-      {/* Fonti */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 11, color: 'var(--txt3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>Fonti di provenienza</div>
         {fonti.length === 0 && <div style={{ fontSize: 12, color: 'var(--txt3)', marginBottom: 8 }}>Nessuna fonte — verranno mostrate tutte le fonti globali.</div>}
@@ -275,13 +421,10 @@ function FlussoEditor({ funnel, config, setConfig, save }) {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input placeholder="Nuova fonte..." value={nuovaFonte} onChange={e => setNuovaFonte(e.target.value)}
-            style={{ flex: 1 }}
-            onKeyDown={e => e.key === 'Enter' && addFonte()} />
+            style={{ flex: 1 }} onKeyDown={e => e.key === 'Enter' && addFonte()} />
           <button className="btn-primary" onClick={addFonte}>Aggiungi</button>
         </div>
       </div>
-
-      {/* Stati del flusso */}
       <div style={{ fontSize: 11, color: 'var(--txt3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>Stati del flusso</div>
       <div style={{ fontSize: 13, color: 'var(--txt2)', marginBottom: 12 }}>
         {flusso.length === 0 ? 'Nessuno stato nel flusso' : `${flusso.length} stati`}
