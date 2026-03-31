@@ -1,7 +1,13 @@
+import { initializeApp, getApps } from 'firebase/app'
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+import { firebaseConfig } from '../firebase'
 import { useState, useEffect } from 'react'
 import { db, auth } from '../firebase'
 import { doc, onSnapshot, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
+
+const secondaryApp = getApps().find(a => a.name === 'secondary') || initializeApp(firebaseConfig, 'secondary')
+const secondaryAuth = getAuth(secondaryApp)
 
 const DEFAULT_CONFIG = {
   funnels: ['Webinar_MindSell_2025', 'Traffico questionario', 'Webinar_Potere_Parole_2026'],
