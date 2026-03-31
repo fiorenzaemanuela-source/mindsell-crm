@@ -2,9 +2,8 @@ import { initializeApp, getApps } from 'firebase/app'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
 import { firebaseConfig } from '../firebase'
 import { useState, useEffect } from 'react'
-import { db, auth } from '../firebase'
-import { doc, onSnapshot, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { db } from '../firebase'
+import { doc, onSnapshot, setDoc, collection, updateDoc } from 'firebase/firestore'
 
 const secondaryApp = getApps().find(a => a.name === 'secondary') || initializeApp(firebaseConfig, 'secondary')
 const secondaryAuth = getAuth(secondaryApp)
