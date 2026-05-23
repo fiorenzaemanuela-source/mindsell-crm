@@ -16,8 +16,8 @@ import Login         from './pages/Login.jsx'
 
 // ── Pagine da sviluppare (Sprint 1-4) — decommentare man mano ─
 // import CodaChiamate    from './pages/CodaChiamate.jsx'
-// import Recall          from './pages/Recall.jsx'
-// import StoricoChiamate from './pages/StoricoChiamate.jsx'
+import StoricoChiamate from './pages/StoricoChiamate.jsx'
+import Recall          from './pages/Recall.jsx'
 // import Agenda          from './pages/Agenda.jsx'
 // import FollowUp        from './pages/FollowUp.jsx'
 // import MieiClienti     from './pages/MieiClienti.jsx'
@@ -241,9 +241,8 @@ function ProtectedApp() {
 
           {/* ── Sprint 1 — Setter ── */}
           <Route path="/coda-chiamate"    element={<ComingSoon title="Coda Chiamate"    sprint={1} />} />
-          <Route path="/recall"           element={<ComingSoon title="Recall"           sprint={1} />} />
-          <Route path="/storico-chiamate" element={<ComingSoon title="Storico Chiamate" sprint={1} />} />
-
+          <Route path="/recall"           element={<Recall />} />
+<Route path="/storico-chiamate" element={<StoricoChiamate />} />
           {/* ── Sprint 2 — Closing + Tools ── */}
           <Route path="/agenda-closer" element={<ComingSoon title="Agenda Closer" sprint={2} />} />
           <Route path="/kpi"           element={<ComingSoon title="KPI Vendita"   sprint={2} />} />
