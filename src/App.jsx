@@ -16,8 +16,8 @@ import Login         from './pages/Login.jsx'
 
 // ── Pagine da sviluppare (Sprint 1-4) — decommentare man mano ─
 // import CodaChiamate    from './pages/CodaChiamate.jsx'
-import StoricoChiamate from './pages/StoricoChiamate.jsx'
-import Recall          from './pages/Recall.jsx'
+// import Recall          from './pages/Recall.jsx'
+// import StoricoChiamate from './pages/StoricoChiamate.jsx'
 // import Agenda          from './pages/Agenda.jsx'
 // import FollowUp        from './pages/FollowUp.jsx'
 // import MieiClienti     from './pages/MieiClienti.jsx'
@@ -29,17 +29,18 @@ import Recall          from './pages/Recall.jsx'
 
 // ── Colori tema ────────────────────────────────────────────────
 const C = {
-  bg:         '#151412',
-  sidebar:    '#1A1916',
-  sideHover:  '#242220',
-  sideActive: '#2E2C29',
-  border:     '#2E2C29',
-  green:      '#A8D700',
-  greenDim:   '#3D4E00',
-  text:       '#F7F5F0',
-  textMid:    '#9E9B94',
-  textDim:    '#6B6760',
-  mono:       "'JetBrains Mono', 'Fira Mono', monospace",
+  bg:         '#080A0D',
+  sidebar:    '#0A0E14',
+  sideHover:  '#0F1520',
+  sideActive: '#131E2C',
+  border:     '#1E2A38',
+  green:      '#6DBF2A',
+  greenDim:   '#1E3A08',
+  blue:       '#2B6CB8',
+  text:       '#F0F4F8',
+  textMid:    '#8A9BB0',
+  textDim:    '#4A5A6E',
+  mono:       "'Montserrat', sans-serif",
 }
 
 // ── Struttura sidebar a sezioni ───────────────────────────────
@@ -241,8 +242,9 @@ function ProtectedApp() {
 
           {/* ── Sprint 1 — Setter ── */}
           <Route path="/coda-chiamate"    element={<ComingSoon title="Coda Chiamate"    sprint={1} />} />
-          <Route path="/recall"           element={<Recall />} />
-<Route path="/storico-chiamate" element={<StoricoChiamate />} />
+          <Route path="/recall"           element={<ComingSoon title="Recall"           sprint={1} />} />
+          <Route path="/storico-chiamate" element={<ComingSoon title="Storico Chiamate" sprint={1} />} />
+
           {/* ── Sprint 2 — Closing + Tools ── */}
           <Route path="/agenda-closer" element={<ComingSoon title="Agenda Closer" sprint={2} />} />
           <Route path="/kpi"           element={<ComingSoon title="KPI Vendita"   sprint={2} />} />
@@ -297,9 +299,23 @@ function Sidebar({ sections, profile, isAdmin }) {
         flexShrink:     0,
       }}>
         {!collapsed && (
-          <div>
-            <div style={{ fontFamily: C.mono, fontSize: 11, color: C.textDim, letterSpacing: '.1em', textTransform: 'uppercase' }}>Mindsell</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginTop: 1, letterSpacing: '-.01em' }}>CRM</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: 'linear-gradient(135deg, #1E3A08 0%, #0A1E38 100%)',
+              border: '1px solid #1E2A38',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 16, flexShrink: 0,
+            }}>
+              🧠
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                <span style={{ fontFamily: C.mono, fontSize: 15, fontWeight: 800, color: '#6DBF2A', letterSpacing: '-.02em' }}>Mind</span>
+                <span style={{ fontFamily: C.mono, fontSize: 15, fontWeight: 800, color: '#2B6CB8', letterSpacing: '-.02em' }}>Sell</span>
+              </div>
+              <div style={{ fontFamily: C.mono, fontSize: 9, color: C.textDim, letterSpacing: '.12em', textTransform: 'uppercase', marginTop: 1 }}>CRM</div>
+            </div>
           </div>
         )}
         <button
