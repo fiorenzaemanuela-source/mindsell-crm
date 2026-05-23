@@ -3,15 +3,15 @@ import { db } from '../firebase'
 import { collection, onSnapshot, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, Timestamp, query, orderBy } from 'firebase/firestore'
 
 const C = {
-  bg:     '#151412',
-  card:   '#1A1916',
-  border: '#2E2C29',
-  green:  '#A8D700',
-  amber:  '#EF9F27',
-  text:   '#F7F5F0',
-  mid:    '#9E9B94',
-  dim:    '#6B6760',
-  mono:   "'JetBrains Mono', 'Fira Mono', monospace",
+  bg:     '#080A0D',
+  card:   '#0F1218',
+  border: '#1E2A38',
+  green:  '#6DBF2A',
+  amber:  '#E8A020',
+  text:   '#F0F4F8',
+  mid:    '#8A9BB0',
+  dim:    '#4A5A6E',
+  mono:   "'Montserrat', sans-serif",
 }
 
 const tempoRelativo = ts => {
@@ -114,14 +114,14 @@ export default function Recall() {
             padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13,
             display: 'flex', alignItems: 'center', gap: 6,
             background: filtro === t.id ? C.green : C.card,
-            color: filtro === t.id ? '#0A0A00' : C.mid,
+            color: filtro === t.id ? '#060A02' : C.mid,
             fontWeight: filtro === t.id ? 700 : 400,
           }}>
             {t.label}
             <span style={{
               fontSize: 11, fontFamily: C.mono, fontWeight: 700,
               background: filtro === t.id ? 'rgba(0,0,0,0.15)' : C.border,
-              color: filtro === t.id ? '#0A0A00' : C.dim,
+              color: filtro === t.id ? '#060A02' : C.dim,
               padding: '1px 7px', borderRadius: 10,
             }}>
               {t.count}
@@ -261,7 +261,7 @@ function SezioneRecall({ titolo, sottotitolo, coloreLabel, items, onElimina }) {
                         <a href={`tel:${r.lead_telefono}`} style={{
                           display: 'inline-flex', alignItems: 'center', gap: 5,
                           padding: '6px 14px', borderRadius: 8,
-                          background: C.green, color: '#0A0A00',
+                          background: C.green, color: '#060A02',
                           textDecoration: 'none', fontSize: 12, fontWeight: 700,
                           border: 'none', cursor: 'pointer',
                         }}>
