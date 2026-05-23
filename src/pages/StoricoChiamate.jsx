@@ -17,8 +17,8 @@ const C = {
   border:  '#1E2A38',
   green:   '#6DBF2A',
   text:    '#F0F4F8',
-  mid:     '#8A9BB0',
-  dim:     '#4A5A6E',
+  mid:     '#B8C8D8',
+  dim:     '#7A92A8',
   mono:    "'Montserrat', sans-serif",
   amber:   '#E8A020',
 }

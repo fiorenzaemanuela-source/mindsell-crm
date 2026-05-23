@@ -53,10 +53,10 @@ const C = {
   border:  '#1E2A38',
   border2: '#2A3A4E',
   green:   '#6DBF2A',
-  blue:    '#2B6CB8',
+  blue:    '#5A9FE0',
   text:    '#F0F4F8',
-  textMid: '#8A9BB0',
-  textDim: '#4A5A6E',
+  textMid: '#B8C8D8',
+  textDim: '#7A92A8',
   mono:    "'Montserrat', sans-serif",
 }
 
@@ -603,7 +603,7 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#F0F4F8' }}>{form.nome} {form.cognome}</div>
-            <div style={{ fontSize: 12, color: '#8A9BB0' }}>{form.email}</div>
+            <div style={{ fontSize: 12, color: '#B8C8D8' }}>{form.email}</div>
           </div>
           {form.telefono && (
             <a href={`tel:${form.telefono}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: '#1E2A38', color: '#6DBF2A', textDecoration: 'none', fontSize: 13, fontWeight: 500, border: '1px solid #3D4E00' }}>
@@ -614,7 +614,7 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
             <button onClick={() => { onSave(); }} disabled={saving} style={{ padding: '7px 14px', borderRadius: 8, background: '#6DBF2A', color: '#060A02', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
               {saving ? '...' : 'Salva'}
             </button>
-            <button onClick={onClose} style={{ padding: '7px 14px', borderRadius: 8, background: 'transparent', color: '#8A9BB0', border: '1px solid #2E2C29', cursor: 'pointer', fontSize: 13 }}>
+            <button onClick={onClose} style={{ padding: '7px 14px', borderRadius: 8, background: 'transparent', color: '#B8C8D8', border: '1px solid #2E2C29', cursor: 'pointer', fontSize: 13 }}>
               ✕
             </button>
           </div>
@@ -626,7 +626,7 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
           {/* Nota generale */}
           <div style={{ background: '#080A0D', borderRadius: 8, padding: '12px 14px', border: '1px solid #2E2C29' }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: '#6DBF2A', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-              ✏ Nota generale del lead <span style={{ color: '#4A5A6E', fontWeight: 400 }}>· autosave</span>
+              ✏ Nota generale del lead <span style={{ color: '#7A92A8', fontWeight: 400 }}>· autosave</span>
             </div>
             <textarea
               style={{ width: '100%', minHeight: 60, background: 'transparent', border: 'none', color: '#F0F4F8', fontSize: 13, resize: 'vertical', outline: 'none', fontFamily: 'inherit' }}
@@ -645,41 +645,41 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
           {/* Anagrafica + Percorso */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={{ background: '#080A0D', borderRadius: 8, padding: '12px 14px', border: '1px solid #2E2C29' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#4A5A6E', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Anagrafica</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#7A92A8', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Anagrafica</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {[['Nome', 'nome'], ['Cognome', 'cognome'], ['Email', 'email'], ['Telefono', 'telefono']].map(([lbl, key]) => (
                   <div key={key}>
-                    <div style={{ fontSize: 10, color: '#4A5A6E', marginBottom: 3 }}>{lbl}</div>
+                    <div style={{ fontSize: 10, color: '#7A92A8', marginBottom: 3 }}>{lbl}</div>
                     <input value={form[key] || ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={{ width: '100%', fontSize: 12 }} />
                   </div>
                 ))}
               </div>
             </div>
             <div style={{ background: '#080A0D', borderRadius: 8, padding: '12px 14px', border: '1px solid #2E2C29' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#4A5A6E', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Percorso</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#7A92A8', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Percorso</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: '#4A5A6E', marginBottom: 3 }}>Funnel</div>
+                  <div style={{ fontSize: 10, color: '#7A92A8', marginBottom: 3 }}>Funnel</div>
                   <select value={form.funnel} onChange={e => { const f = e.target.value; setForm(prev => ({ ...prev, funnel: f, stage: '' })) }} style={{ width: '100%', fontSize: 12 }}>
                     <option value="">—</option>
                     {FUNNEL_OPTIONS.map(o => <option key={o}>{o}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: '#4A5A6E', marginBottom: 3 }}>Stato</div>
+                  <div style={{ fontSize: 10, color: '#7A92A8', marginBottom: 3 }}>Stato</div>
                   <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))} style={{ width: '100%', fontSize: 12 }}>
                     <option value="">—</option>
                     {flussoCorrente.map(o => <option key={o}>{o}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: '#4A5A6E', marginBottom: 3 }}>Priorità</div>
+                  <div style={{ fontSize: 10, color: '#7A92A8', marginBottom: 3 }}>Priorità</div>
                   <select value={form.priorita} onChange={e => setForm(f => ({ ...f, priorita: e.target.value }))} style={{ width: '100%', fontSize: 12 }}>
                     {PRIORITA.map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: '#4A5A6E', marginBottom: 3 }}>Fonte</div>
+                  <div style={{ fontSize: 10, color: '#7A92A8', marginBottom: 3 }}>Fonte</div>
                   <select value={form.fonte} onChange={e => setForm(f => ({ ...f, fonte: e.target.value }))} style={{ width: '100%', fontSize: 12 }}>
                     <option value="">—</option>
                     {FONTE_OPTIONS.map(o => <option key={o}>{o}</option>)}
@@ -691,12 +691,12 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
 
           {/* Note strutturate MindSell */}
           <div style={{ background: '#080A0D', borderRadius: 8, padding: '12px 14px', border: '1px solid #2E2C29' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#4A5A6E', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#7A92A8', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>
               Note strutturate (compila durante la call)
             </div>
 
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 10, color: '#4A5A6E', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Settore / Prodotto venduto</div>
+              <div style={{ fontSize: 10, color: '#7A92A8', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Settore / Prodotto venduto</div>
               <input
                 placeholder="es. Immobiliare, Assicurazioni, Software B2B, Consulenza..."
                 value={form.settoreVendita || ''}
@@ -706,7 +706,7 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
             </div>
 
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 10, color: '#4A5A6E', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Problema principale con le vendite</div>
+              <div style={{ fontSize: 10, color: '#7A92A8', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Problema principale con le vendite</div>
               <textarea
                 placeholder="es. Non riesce a chiudere, paura del rifiuto, non sa gestire le obiezioni, perde clienti sul prezzo..."
                 value={form.problemaVendite || ''}
@@ -716,7 +716,7 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
             </div>
 
             <div>
-              <div style={{ fontSize: 10, color: '#4A5A6E', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Ha già fatto formazione alla vendita?</div>
+              <div style={{ fontSize: 10, color: '#7A92A8', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Ha già fatto formazione alla vendita?</div>
               <textarea
                 placeholder="es. Sì, ha fatto corso X ma non ha visto risultati / No, è la prima volta che investe in formazione..."
                 value={form.formazionePrecedente || ''}
@@ -728,7 +728,7 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
 
           {/* Flow email */}
           <div style={{ background: '#080A0D', borderRadius: 8, padding: '12px 14px', border: '1px solid #2E2C29' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#4A5A6E', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Flow email</div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#7A92A8', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Flow email</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {FLOW_OPTIONS.map(o => (
                 <label key={o} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6, border: '1px solid #2E2C29', cursor: 'pointer', background: form.flowEmail === o ? '#1E2A38' : 'transparent' }}>
@@ -738,7 +738,7 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
                 </label>
               ))}
               {form.flowEmail && (
-                <button onClick={() => setForm(f => ({ ...f, flowEmail: '' }))} style={{ background: 'none', border: 'none', fontSize: 11, color: '#4A5A6E', cursor: 'pointer', textAlign: 'left', padding: '2px 0' }}>✕ Rimuovi flow</button>
+                <button onClick={() => setForm(f => ({ ...f, flowEmail: '' }))} style={{ background: 'none', border: 'none', fontSize: 11, color: '#7A92A8', cursor: 'pointer', textAlign: 'left', padding: '2px 0' }}>✕ Rimuovi flow</button>
               )}
             </div>
           </div>
@@ -752,13 +752,13 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
                   <div style={{ fontSize: 13, fontWeight: 500, color: '#F0F4F8' }}>Questionario</div>
                   <div style={{ fontSize: 11, color: '#3B6D11' }}>{campiQ.length} risposte — clicca per {showQuestionario ? 'chiudere' : 'leggere'}</div>
                 </div>
-                <span style={{ fontSize: 11, color: '#4A5A6E' }}>{showQuestionario ? '▲' : '▼'}</span>
+                <span style={{ fontSize: 11, color: '#7A92A8' }}>{showQuestionario ? '▲' : '▼'}</span>
               </div>
               {showQuestionario && (
                 <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #2E2C29' }}>
                   {campiQ.map((c, i) => (
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, padding: '5px 0', borderBottom: '1px solid #2E2C29' }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: '#4A5A6E', textTransform: 'uppercase', letterSpacing: '.04em' }}>{c.label}</div>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: '#7A92A8', textTransform: 'uppercase', letterSpacing: '.04em' }}>{c.label}</div>
                       <div style={{ fontSize: 12, color: '#F0F4F8' }}>{c.val}</div>
                     </div>
                   ))}
@@ -910,7 +910,7 @@ function AvviaChiamata({ lead, form, setForm, user, profile, onSaveForm }) {
 
       {/* Note durante la call */}
       <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 10, color: '#4A5A6E', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Note durante la call</div>
+        <div style={{ fontSize: 10, color: '#7A92A8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Note durante la call</div>
         <textarea
           value={noteChiamata}
           onChange={e => setNoteChiamata(e.target.value)}
@@ -921,7 +921,7 @@ function AvviaChiamata({ lead, form, setForm, user, profile, onSaveForm }) {
 
       {/* Da risentire — selettore data/ora */}
       <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 10, color: '#4A5A6E', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Se "Da risentire" — scegli quando</div>
+        <div style={{ fontSize: 10, color: '#7A92A8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Se "Da risentire" — scegli quando</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input type="date" value={dataRichiamata} onChange={e => setDataRichiamata(e.target.value)} style={{ flex: 1, fontSize: 12, background: '#0F1218', border: '1px solid #2E2C29', borderRadius: 6, color: '#F0F4F8', padding: '6px 8px' }} />
           <input type="time" value={oraRichiamata} onChange={e => setOraRichiamata(e.target.value)} style={{ width: 100, fontSize: 12, background: '#0F1218', border: '1px solid #2E2C29', borderRadius: 6, color: '#F0F4F8', padding: '6px 8px' }} />
@@ -929,13 +929,13 @@ function AvviaChiamata({ lead, form, setForm, user, profile, onSaveForm }) {
       </div>
 
       {/* Esito positivo */}
-      <div style={{ fontSize: 10, color: '#4A5A6E', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Esito positivo</div>
+      <div style={{ fontSize: 10, color: '#7A92A8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Esito positivo</div>
       <button onClick={() => registraEsito('prenotata')} disabled={salvando} style={{ width: '100%', padding: '10px', borderRadius: 8, background: '#6DBF2A', color: '#060A02', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, marginBottom: 10 }}>
         📅 Consulenza prenotata
       </button>
 
       {/* Da riprovare */}
-      <div style={{ fontSize: 10, color: '#4A5A6E', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Da riprovare</div>
+      <div style={{ fontSize: 10, color: '#7A92A8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Da riprovare</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
         <button onClick={() => registraEsito('non_risponde')} disabled={salvando} style={{ padding: '9px', borderRadius: 8, background: '#1E2A38', color: '#F0F4F8', border: '1px solid #3D3C39', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
           ✕ Non risponde
@@ -946,7 +946,7 @@ function AvviaChiamata({ lead, form, setForm, user, profile, onSaveForm }) {
       </div>
 
       {/* Chiudi lead */}
-      <div style={{ fontSize: 10, color: '#4A5A6E', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Chiudi lead</div>
+      <div style={{ fontSize: 10, color: '#7A92A8', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Chiudi lead</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         {['non_in_target', 'numero_errato', 'blacklist'].map(id => {
           const esito = ESITI_CHIAMATA.find(e => e.id === id)
@@ -958,7 +958,7 @@ function AvviaChiamata({ lead, form, setForm, user, profile, onSaveForm }) {
         })}
       </div>
 
-      {salvando && <div style={{ textAlign: 'center', fontSize: 12, color: '#8A9BB0', marginTop: 10 }}>Salvataggio...</div>}
+      {salvando && <div style={{ textAlign: 'center', fontSize: 12, color: '#B8C8D8', marginTop: 10 }}>Salvataggio...</div>}
     </div>
   )
 }
@@ -987,12 +987,12 @@ function StoriaChiamateLead({ leadId }) {
 
   return (
     <div style={{ background: '#080A0D', borderRadius: 8, padding: '12px 14px', border: '1px solid #2E2C29' }}>
-      <div style={{ fontSize: 10, fontWeight: 600, color: '#4A5A6E', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>
+      <div style={{ fontSize: 10, fontWeight: 600, color: '#7A92A8', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>
         ◷ Storia chiamate ({chiamate.length})
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {chiamate.map(c => {
-          const badge = ESITO_BADGE[c.esito] || { bg: '#1E2A38', color: '#8A9BB0' }
+          const badge = ESITO_BADGE[c.esito] || { bg: '#1E2A38', color: '#B8C8D8' }
           const label = ESITI_CHIAMATA.find(e => e.id === c.esito)?.label || c.esito
           return (
             <div key={c.id} style={{ padding: '8px 10px', background: '#0F1218', borderRadius: 6, border: '1px solid #2E2C29' }}>
@@ -1000,21 +1000,21 @@ function StoriaChiamateLead({ leadId }) {
                 <span style={{ background: badge.bg, color: badge.color, fontSize: 10, padding: '2px 7px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
                   {label}
                 </span>
-                <span style={{ fontSize: 11, color: '#4A5A6E' }}>
+                <span style={{ fontSize: 11, color: '#7A92A8' }}>
                   {c.timestamp?.toDate
                     ? c.timestamp.toDate().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) + ', ' +
                       c.timestamp.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
                     : '—'
                   }
                 </span>
-                <span style={{ fontSize: 11, color: '#4A5A6E' }}>· {c.setter_nome || 'Setter'}</span>
+                <span style={{ fontSize: 11, color: '#7A92A8' }}>· {c.setter_nome || 'Setter'}</span>
                 {c.durata > 0 && (
-                  <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#8A9BB0' }}>
+                  <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#B8C8D8' }}>
                     {formatDurata(c.durata)}
                   </span>
                 )}
               </div>
-              {c.note && <div style={{ fontSize: 12, color: '#8A9BB0', paddingLeft: 2 }}>{c.note}</div>}
+              {c.note && <div style={{ fontSize: 12, color: '#B8C8D8', paddingLeft: 2 }}>{c.note}</div>}
             </div>
           )
         })}
