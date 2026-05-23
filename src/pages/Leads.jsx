@@ -686,25 +686,41 @@ function LeadModal({ lead, form, setForm, onClose, onSave, onDelete, saving, crm
             </div>
           </div>
 
-          {/* Note strutturate */}
+          {/* Note strutturate MindSell */}
           <div style={{ background: '#151412', borderRadius: 8, padding: '12px 14px', border: '1px solid #2E2C29' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#6B6760', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Note strutturate (compila durante la call)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-              <div>
-                <div style={{ fontSize: 10, color: '#6B6760', marginBottom: 3 }}>Professione / Business</div>
-                <input placeholder="es. Pubblicità, Edilizia..." value={form.professione || ''} onChange={e => setForm(f => ({ ...f, professione: e.target.value }))} style={{ width: '100%', fontSize: 12 }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: '#6B6760', marginBottom: 3 }}>Ticket medio</div>
-                <input placeholder="es. 200€-10k€" value={form.ticketMedio || ''} onChange={e => setForm(f => ({ ...f, ticketMedio: e.target.value }))} style={{ width: '100%', fontSize: 12 }} />
-              </div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#6B6760', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>
+              Note strutturate (compila durante la call)
             </div>
-            {[['Descrizione attività', 'descrizioneAttivita', 'cosa fa, a chi vende, scala...'], ['Problema', 'problema', 'il pain point reale'], ['Obiettivo tecnico/emotivo', 'obiettivo', 'dove vuole arrivare e perché'], ['Esperienze passate con agenzie', 'esperienzePrecedenti', 'cosa hanno provato e perché non ha funzionato'], ['Altro', 'altroNote', 'note libere']].map(([lbl, key, ph]) => (
-              <div key={key} style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 10, color: '#6B6760', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.04em' }}>{lbl}</div>
-                <textarea placeholder={ph} value={form[key] || ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={{ width: '100%', minHeight: 52, background: '#1A1916', border: '1px solid #2E2C29', borderRadius: 6, color: '#F7F5F0', fontSize: 12, padding: '6px 8px', resize: 'vertical', fontFamily: 'inherit' }} />
-              </div>
-            ))}
+
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10, color: '#6B6760', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Settore / Prodotto venduto</div>
+              <input
+                placeholder="es. Immobiliare, Assicurazioni, Software B2B, Consulenza..."
+                value={form.settoreVendita || ''}
+                onChange={e => setForm(f => ({ ...f, settoreVendita: e.target.value }))}
+                style={{ width: '100%', fontSize: 12 }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10, color: '#6B6760', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Problema principale con le vendite</div>
+              <textarea
+                placeholder="es. Non riesce a chiudere, paura del rifiuto, non sa gestire le obiezioni, perde clienti sul prezzo..."
+                value={form.problemaVendite || ''}
+                onChange={e => setForm(f => ({ ...f, problemaVendite: e.target.value }))}
+                style={{ width: '100%', minHeight: 72, background: '#1A1916', border: '1px solid #2E2C29', borderRadius: 6, color: '#F7F5F0', fontSize: 12, padding: '6px 8px', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
+
+            <div>
+              <div style={{ fontSize: 10, color: '#6B6760', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Ha già fatto formazione alla vendita?</div>
+              <textarea
+                placeholder="es. Sì, ha fatto corso X ma non ha visto risultati / No, è la prima volta che investe in formazione..."
+                value={form.formazionePrecedente || ''}
+                onChange={e => setForm(f => ({ ...f, formazionePrecedente: e.target.value }))}
+                style={{ width: '100%', minHeight: 72, background: '#1A1916', border: '1px solid #2E2C29', borderRadius: 6, color: '#F7F5F0', fontSize: 12, padding: '6px 8px', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
           </div>
 
           {/* Flow email */}
