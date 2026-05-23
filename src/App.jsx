@@ -4,6 +4,7 @@ import { signOut } from 'firebase/auth'
 import { auth, db } from './firebase'
 import { AuthProvider, useAuth } from './AuthContext'
 import { collection, onSnapshot, query, where } from 'firebase/firestore'
+import logo from './logo.png'
 
 // ── Pagine esistenti (già funzionanti) ────────────────────────
 import AgendaSetter  from './pages/AgendaSetter.jsx'
@@ -36,10 +37,10 @@ const C = {
   border:     '#1E2A38',
   green:      '#6DBF2A',
   greenDim:   '#1E3A08',
-  blue:       '#2B6CB8',
+  blue:       '#5A9FE0',
   text:       '#F0F4F8',
-  textMid:    '#8A9BB0',
-  textDim:    '#4A5A6E',
+  textMid:    '#B8C8D8',
+  textDim:    '#7A92A8',
   mono:       "'Montserrat', sans-serif",
 }
 
@@ -114,9 +115,9 @@ function ComingSoon({ title, sprint }) {
       height: '60vh', gap: 16,
     }}>
       <div style={{ fontSize: 36, opacity: .15 }}>◈</div>
-      <div style={{ fontSize: 15, color: C.textMid, fontFamily: C.mono }}>{title}</div>
+      <div style={{ fontSize: 15, color: '#B8C8D8', fontFamily: C.mono }}>{title}</div>
       <div style={{
-        fontSize: 11, color: C.textDim, fontFamily: C.mono,
+        fontSize: 11, color: '#7A92A8', fontFamily: C.mono,
         background: C.sideActive, padding: '4px 12px', borderRadius: 20,
         border: `1px solid ${C.border}`,
       }}>
@@ -300,21 +301,17 @@ function Sidebar({ sections, profile, isAdmin }) {
       }}>
         {!collapsed && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'linear-gradient(135deg, #1E3A08 0%, #0A1E38 100%)',
-              border: '1px solid #1E2A38',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 16, flexShrink: 0,
-            }}>
-              🧠
-            </div>
+            <img
+              src={logo}
+              alt="MindSell"
+              style={{ width: 36, height: 36, objectFit: 'contain', flexShrink: 0 }}
+            />
             <div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                 <span style={{ fontFamily: C.mono, fontSize: 15, fontWeight: 800, color: '#6DBF2A', letterSpacing: '-.02em' }}>Mind</span>
-                <span style={{ fontFamily: C.mono, fontSize: 15, fontWeight: 800, color: '#2B6CB8', letterSpacing: '-.02em' }}>Sell</span>
+                <span style={{ fontFamily: C.mono, fontSize: 15, fontWeight: 800, color: '#5A9FE0', letterSpacing: '-.02em' }}>Sell</span>
               </div>
-              <div style={{ fontFamily: C.mono, fontSize: 9, color: C.textDim, letterSpacing: '.12em', textTransform: 'uppercase', marginTop: 1 }}>CRM</div>
+              <div style={{ fontFamily: C.mono, fontSize: 9, color: '#6A8AA8', letterSpacing: '.12em', textTransform: 'uppercase', marginTop: 1 }}>CRM</div>
             </div>
           </div>
         )}
@@ -322,7 +319,7 @@ function Sidebar({ sections, profile, isAdmin }) {
           onClick={() => setCollapsed(c => !c)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: C.textDim, fontSize: 14, padding: 4,
+            color: '#7A92A8', fontSize: 14, padding: 4,
             marginLeft: collapsed ? 'auto' : 0, lineHeight: 1,
           }}
           title={collapsed ? 'Espandi' : 'Comprimi'}
@@ -470,10 +467,10 @@ function Sidebar({ sections, profile, isAdmin }) {
             marginBottom:  8,
           }}>
             <div>
-              <div style={{ fontSize: 11, color: C.textMid, fontFamily: C.mono, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 }}>
+              <div style={{ fontSize: 11, color: '#B8C8D8', fontFamily: C.mono, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 }}>
                 {profile.nome || profile.email}
               </div>
-              <div style={{ fontSize: 10, color: C.textDim, fontFamily: C.mono, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+              <div style={{ fontSize: 10, color: '#7A92A8', fontFamily: C.mono, textTransform: 'uppercase', letterSpacing: '.08em' }}>
                 {profile.ruolo}
               </div>
             </div>
@@ -482,7 +479,7 @@ function Sidebar({ sections, profile, isAdmin }) {
               title="Esci"
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: C.textDim, fontSize: 13, padding: 4,
+                color: '#7A92A8', fontSize: 13, padding: 4,
               }}
             >
               ⏻
@@ -501,7 +498,7 @@ function Sidebar({ sections, profile, isAdmin }) {
             boxShadow:    '0 0 6px #4ADE8088',
           }} />
           {!collapsed && (
-            <span style={{ fontSize: 10, color: C.textDim, fontFamily: C.mono }}>
+            <span style={{ fontSize: 10, color: '#7A92A8', fontFamily: C.mono }}>
               Firebase live
             </span>
           )}
