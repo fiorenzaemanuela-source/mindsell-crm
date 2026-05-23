@@ -12,14 +12,15 @@ const ESITI = [
 ]
 
 const C = {
-  bg:      '#151412',
-  card:    '#1A1916',
-  border:  '#2E2C29',
-  green:   '#A8D700',
-  text:    '#F7F5F0',
-  mid:     '#9E9B94',
-  dim:     '#6B6760',
-  mono:    "'JetBrains Mono', 'Fira Mono', monospace",
+  bg:      '#080A0D',
+  card:    '#0F1218',
+  border:  '#1E2A38',
+  green:   '#6DBF2A',
+  text:    '#F0F4F8',
+  mid:     '#8A9BB0',
+  dim:     '#4A5A6E',
+  mono:    "'Montserrat', sans-serif",
+  amber:   '#E8A020',
 }
 
 const formatDurata = sec => {
@@ -127,7 +128,7 @@ export default function StoricoChiamate() {
             <button key={f} onClick={() => setFiltro(f)} style={{
               padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13,
               background: filtro === f ? C.green : C.card,
-              color: filtro === f ? '#0A0A00' : C.mid,
+              color: filtro === f ? '#060A02' : C.mid,
               fontWeight: filtro === f ? 700 : 400,
             }}>
               {f}
@@ -252,7 +253,7 @@ export default function StoricoChiamate() {
                     {/* Azioni */}
                     <td style={{ padding: '11px 14px', whiteSpace: 'nowrap' }}>
                       {c.lead_telefono && (
-                        <a href={`tel:${c.lead_telefono}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 6, background: '#2E2C29', color: C.green, textDecoration: 'none', fontSize: 11, fontWeight: 600 }}>
+                        <a href={`tel:${c.lead_telefono}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 6, background: '#1E2A38', color: C.green, textDecoration: 'none', fontSize: 11, fontWeight: 600 }}>
                           ↺ Nuova call
                         </a>
                       )}
