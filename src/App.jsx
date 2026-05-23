@@ -4,7 +4,7 @@ import { signOut } from 'firebase/auth'
 import { auth, db } from './firebase'
 import { AuthProvider, useAuth } from './AuthContext'
 import { collection, onSnapshot, query, where } from 'firebase/firestore'
-import logo from './logo.png'
+import logo from './logo.png.png'
 
 // ── Pagine esistenti (già funzionanti) ────────────────────────
 import AgendaSetter  from './pages/AgendaSetter.jsx'
